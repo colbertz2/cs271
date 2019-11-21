@@ -54,3 +54,63 @@ Bin     Dec
 4. Add 1
 
 **Read** Signed hex numbers
+
+
+## 8 Oct 2019
+### Floating Point Numbers
++ Converting a floating point decimal to binary
++ IEEE 754 Single Precision Numbers
++ Overviewed format for doubles and longs
+
+### Character Encoding Systems
++ ASCII
++ Unicode
+
+
+## 15 Oct 2019
+### Computer Architecture
++ Von Neumann Architecture
++ Microarchitecture
++ Instruction Set Architecture (ISA)
+
+#### Language Levels
++ 4 - Natural
+    + Used by humans
+    + Ex: English
++ 3 - High
+    + English-like, portable across architecture
+    + Translated to low-level by a compiler
+    + Ex: C++
++ 2 - Low
+    + Direct control of hardware
+    + Ex: MASM, other Assembly
++ 1 - Machine
+    + Literal binary
+
+#### Common Uses of Assembly Language
++ Embedded programming
++ Real-time applications
++ Device drivers
++ Firmware
+
+### Intel x86 Architecture - CISC
++ Complex Instruction Set Computing
+
+#### CISC Components
++ Peripheral Devices
++ I/O Unit
++ Main Memory
++ CPU
+
+### Other Architectures
++ RISC - Reduced Instruction Set Computing
++ EPIC - Explicitly Parallel Instruction Computing
++ MISC - Minimal Instruction Set Computing
++ VLIW - Very Long Instruction Word
++ OISC - One Instruction Set Computing
+
+## 29 Oct 2019
+### Intro to MASM
++ Template for asm files is on Canvas, under additional resources
++ `=` is only for assigning 32-bit ints
++ `EQU` is for assigning anything
