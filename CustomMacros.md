@@ -25,9 +25,9 @@ for the Irvine32 Library
 `mReadString buffer, lenBuffer, maxSize`
 Reads string input from the console, terminated with the return key.
 #### Arguments
-**buffer** - _(BYTE)_ Variable in which to store the string. Must have maxSize+1 capacity.
-**lenBuffer** - _(DWORD)_ Variable in which to store the final length of the string. Must have DWORD capacity.
-**maxSize** - _(DWORD)_ Maximum length of the string.
++ **buffer** - _(BYTE)_ Variable in which to store the string. Must have maxSize+1 capacity.
++ **lenBuffer** - _(DWORD)_ Variable in which to store the final length of the string. Must have DWORD capacity.
++ **maxSize** - _(DWORD)_ Maximum length of the string.
 #### Example
 ```
 .data
@@ -48,7 +48,7 @@ main ENDP
 `mReadDec buffer`
 Reads unsigned integer input from the console, terminated with the return key.
 #### Arguments
-**buffer** - _(DWORD)_ Variable in which to store the integer.
++ **buffer** - _(DWORD)_ Variable in which to store the integer.
 #### Example
 ```
 .data
@@ -67,7 +67,7 @@ main ENDP
 `mReadInt buffer`
 Reads signed integer input from the console, terminated with the return key.
 #### Arguments
-**buffer** - _(DWORD)_ Variable in which to store the integer.
++ **buffer** - _(DWORD)_ Variable in which to store the integer.
 #### Example
 ```
 .data
@@ -88,7 +88,7 @@ Reads float input from the console, terminated by return key.
 #### Preconditions
 Initialize the FPU with `finit` before calling this macro.
 #### Arguments
-**buffer** - _(REAL8)_ Variable in which to store the float.
++ **buffer** - _(REAL8)_ Variable in which to store the float.
 #### Example
 ```
 .data
@@ -109,7 +109,7 @@ main ENDP
 `mWriteString buffer`
 Writes a string to the console from memory.
 #### Arguments
-**buffer** - _(BYTE)_ Variable from which to read the string.
++ **buffer** - _(BYTE)_ Variable from which to read the string.
 #### Example
 ```
 .data
@@ -128,7 +128,7 @@ main ENDP
 `mWriteDec buffer`
 Writes an unsigned integer to the console from memory.
 #### Arguments
-**buffer** - _(DWORD)_ Variable from which to read the integer.
++ **buffer** - _(DWORD)_ Variable from which to read the integer.
 #### Example
 ```
 .data
@@ -147,7 +147,7 @@ main ENDP
 `mWriteInt buffer`
 Writes a signed integer to the console from memory.
 #### Arguments
-**buffer** - _(DWORD)_ Variable from which to read the integer.
++ **buffer** - _(DWORD)_ Variable from which to read the integer.
 #### Example
 ```
 .data
@@ -168,7 +168,7 @@ Writes a float to the console from memory.
 #### Preconditions
 Intialize the FPU with `finit` before calling this macro.
 #### Arguments
-**buffer** - _(REAL8)_ Variable from which to read the float.
++ **buffer** - _(REAL8)_ Variable from which to read the float.
 #### Example
 ```
 .data
@@ -216,9 +216,9 @@ Returns a random integer in the specified range.
 #### Preconditions
 Set the random number seed with `mRandomize` or `call Randomize` before calling this macro.
 #### Arguments
-**buffer** - _(DWORD)_ Variable in which to store the random integer.
-**hi** - _(DWORD)_ Maximum value of the random number.
-**lo** - _(DWORD)_ Minimum value of the random number.
++ **buffer** - _(DWORD)_ Variable in which to store the random integer.
++ **hi** - _(DWORD)_ Maximum value of the random number.
++ **lo** - _(DWORD)_ Minimum value of the random number.
 #### Example
 ```
 .data
