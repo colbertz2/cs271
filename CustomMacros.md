@@ -3,22 +3,22 @@ for the Irvine32 Library
 
 ## Contents
 ### [Reading Macros](#reading-macros)
-[mReadString](#mReadString)
-[mReadDec](#mReadDec)
-[mReadInt](#mReadInt)
-[mReadFloat](#mReadFloat)
++ [mReadString](#mReadString)
++ [mReadDec](#mReadDec)
++ [mReadInt](#mReadInt)
++ [mReadFloat](#mReadFloat)
 ### [Writing Macros](#writing-macros)
-[mWriteString](#mWriteString)
-[mWriteDec](#mWriteDec)
-[mWriteInt](#mWriteInt)
-[mWriteFloat](#mWriteFloat)
-[mNewLine](#mNewLine)
-[mCrlf](#mCrlf)
-[mClearScreen](#mClearScreen)
-[mClrScr](#mClrScr)
++ [mWriteString](#mWriteString)
++ [mWriteDec](#mWriteDec)
++ [mWriteInt](#mWriteInt)
++ [mWriteFloat](#mWriteFloat)
++ [mNewLine](#mNewLine)
++ [mCrlf](#mCrlf)
++ [mClearScreen](#mClearScreen)
++ [mClrScr](#mClrScr)
 ### [Other Macros](#other-macros)
-[mRandomize](#mRandomize)
-[mRandomRange](#mRandomRange)
++ [mRandomize](#mRandomize)
++ [mRandomRange](#mRandomRange)
 
 ## Reading Macros
 ### mReadString
@@ -43,6 +43,7 @@ main PROC
 main ENDP
 ```
 
+---
 ### mReadDec
 `mReadDec buffer`
 Reads unsigned integer input from the console, terminated with the return key.
@@ -61,6 +62,7 @@ main PROC
 main ENDP
 ```
 
+---
 ### mReadInt
 `mReadInt buffer`
 Reads signed integer input from the console, terminated with the return key.
@@ -79,6 +81,7 @@ main PROC
 main ENDP
 ```
 
+---
 ### mReadFloat
 `mReadFloat buffer`
 Reads float input from the console, terminated by return key.
@@ -100,6 +103,7 @@ main PROC
 main ENDP
 ```
 
+---
 ## Writing Macros
 ### mWriteString
 `mWriteString buffer`
@@ -119,6 +123,7 @@ main PROC
 main ENDP
 ```
 
+---
 ### mWriteDec
 `mWriteDec buffer`
 Writes an unsigned integer to the console from memory.
@@ -137,6 +142,7 @@ main PROC
 main ENDP
 ```
 
+---
 ### mWriteInt
 `mWriteInt buffer`
 Writes a signed integer to the console from memory.
@@ -155,6 +161,7 @@ main PROC
 main ENDP
 ```
 
+---
 ### mWriteFloat
 `mWriteFloat buffer`
 Writes a float to the console from memory.
@@ -176,27 +183,33 @@ main PROC
 main ENDP
 ```
 
+---
 ### mNewLine
 `mNewLine`
 Writes a newline to the console.
 
+---
 ### mCrlf
 `mCrlf`
 Writes a newline to the console.
 
+---
 ### mClearScreen
 `mClearScreen`
 Clears the console window.
 
+---
 ### mClrScr
 `mClrScr`
 Clears the console window.
+
 
 ## Other Macros
 ### mRandomize
 `mRandomize`
 Sets a seed for the random number sequence. Call once during the program to initialize.
 
+---
 ### mRandomRange
 `mRandomRange buffer, hi, lo`
 Returns a random integer in the specified range.
