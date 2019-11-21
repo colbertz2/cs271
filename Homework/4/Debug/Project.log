@@ -1,0 +1,4 @@
+﻿  Assembling template.asm...
+template.asm(26): warning A4006: too many arguments in macro call
+template.asm(26): error A2084: constant value too large
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\BuildCustomizations\masm.targets(70,5): error MSB3721: The command "ml.exe /c /nologo /Sg /Zi /Fo"Debug\template.obj" /Fl"Project.lst" /I "c:\Irvine" /W3 /errorReport:prompt  /Tatemplate.asm" exited with code 1.
