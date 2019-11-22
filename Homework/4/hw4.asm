@@ -48,7 +48,7 @@ HLINE_LENGTH = 30
 main PROC
     call intro
 
-    push arrLength
+    push OFFSET arrLength
     call getUserInput
 
     mWriteDec arrLength
@@ -79,6 +79,7 @@ intro PROC
     mNewLine
     mNewLine
     pop EDX
+    ret
 intro ENDP
 
 ; getUserInput
@@ -109,12 +110,15 @@ getUserInput PROC
         mWriteDec INPUT_MAX
         mWriteString prompt3
 
-    mReadDec EAX
+    mov ESI, [EBP + 8]
+    mReadDec ESI
+    mov EAX, [ESI]
 
     cmp EAX, INPUT_MIN
     jl boundLo
     cmp EAX, INPUT_MAX
     jg boundHi
+    jmp fin
 
     boundLo:
         mWriteDec EAX
@@ -131,9 +135,6 @@ getUserInput PROC
         jmp prompt
 
     fin:
-        mov ESI, [EBP + 8]
-        mov [ESI], EAX
-
     pop ESI
     pop EDX
     pop EAX
