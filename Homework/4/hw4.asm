@@ -75,7 +75,7 @@ intro PROC
     mNewLine
     mWriteString authName
     mNewLine
-    nWriteString dhline
+    mWriteString dhline
     mNewLine
     mNewLine
     pop EDX
@@ -95,12 +95,7 @@ intro ENDP
 ;       None
 ;   Changes Registers:
 ;       None
-getUserInput PROC
-    LOCAL prompt
-    LOCAL boundHi
-    LOCAL boundLo
-    LOCAL fin
-    
+getUserInput PROC    
     push EBP
     mov EBP, ESP
     push EAX

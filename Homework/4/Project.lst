@@ -1,13 +1,14 @@
-Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/12/19 12:32:59
-#Program Template     (template.asm			     Page 1 - 1
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/21/19 16:53:01
+ Arrays and Sorting     (hw4.asm			     Page 1 - 1
 
 
-				TITLE Program Template     (template.asm)
+				TITLE Arrays and Sorting     (hw4.asm)
 
-				; Author:
-				; Course / Project ID                 Date:
-				; Description:
+				; Author: Zach Colbert
+				; CS 271 / Homework 4                 Date: 27 November 2019
+				; Description: Creates an array of random integers and sorts it.
 
+				; LIBRARY INCLUDES
 				INCLUDE Irvine32.inc
 			      C ; Include file for Irvine32.lib             (Irvine32.inc)
 			      C 
@@ -26,47 +27,352 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/12/19 12:32:59
 			      C .NOLIST
 			      C .LIST
 			      C 
+				INCLUDE customMacros.inc
+			      C mReadString MACRO buffer, lenBuffer, maxSize
+			      C     push EDX
+			      C     push ECX
+			      C     push EAX
+			      C 
+			      C     mov EDX, OFFSET buffer
+			      C     mov ECX, maxSize
+			      C     call ReadString
+			      C 
+			      C     mov [lenBuffer], EAX
+			      C 
+			      C     pop EAX
+			      C     pop ECX
+			      C     pop EDX
+			      C ENDM
+			      C 
+			      C mReadDec MACRO buffer
+			      C     push EAX
+			      C     pushf
+			      C 
+			      C     call ReadDec
+			      C     mov [buffer], EAX
+			      C 
+			      C     popf
+			      C     pop EAX
+			      C ENDM
+			      C 
+			      C mReadInt MACRO buffer
+			      C     push EAX
+			      C     pushf
+			      C 
+			      C     call ReadInt
+			      C     mov [buffer], EAX
+			      C     
+			      C     popf
+			      C     pop EAX
+			      C ENDM
+			      C 
+			      C mReadFloat MACRO buffer
+			      C     call ReadFloat
+			      C     fstp buffer
+			      C ENDM
+			      C 
+			      C mRandomize MACRO
+			      C     call Randomize
+			      C ENDM
+			      C 
+			      C mRandomRange MACRO buffer, hi, lo
+			      C     push EAX
+			      C 
+			      C     mov EAX, hi
+			      C     sub EAX, lo
+			      C     inc EAX
+			      C     call RandomRange
+			      C     add EAX, lo
+			      C     mov [buffer], EAX
+			      C 
+			      C     pop EAX
+			      C ENDM
+			      C 
+			      C mWriteString MACRO buffer
+			      C     push    EDX
+			      C     mov     EDX, OFFSET buffer
+			      C     call    WriteString
+			      C     pop     EDX
+			      C ENDM
+			      C 
+			      C mWriteDec MACRO num
+			      C     push    EAX
+			      C     mov     EAX, num
+			      C     call    WriteDec
+			      C     pop     EAX
+			      C ENDM
+			      C 
+			      C mWriteInt MACRO num
+			      C     push    EAX
+			      C     mov     EAX, num
+			      C     call WriteInt
+			      C     pop     EAX
+			      C ENDM
+			      C 
+			      C mWriteFloat MACRO buffer
+			      C     fld buffer
+			      C     call WriteFloat
+			      C     fstp st(0)  ; Throw away the top of the stack
+			      C ENDM
+			      C 
+			      C mNewLine MACRO
+			      C     call Crlf
+			      C ENDM
+			      C 
+			      C mCrlf MACRO
+			      C     call Crlf
+			      C ENDM
+			      C 
+			      C mClearScreen MACRO
+			      C     call ClrScr
+			      C ENDM
+			      C 
+			      C mClrScr MACRO
+			      C     call ClrScr
+			      C ENDM
+			      C 
 
-				; (insert constant definitions here)
-				mWriteStr MACRO buffer
-				    push    EDX
-				    mov     EDX, OFFSET buffer
-				    call    WriteString
-				    call    Crlf
-				    pop     EDX
-				ENDM
+				; CONSTANT DEFINITIONS
+ = 0000000A			INPUT_MIN = 10
+ = 000000C8			INPUT_MAX = 200
+ = 00000064			RAND_MIN = 100
+ = 000003E7			RAND_MAX = 999
+ = 0000000A			PRNT_PER_LINE = 10
+ = 0000001E			HLINE_LENGTH = 30
 
  00000000			.data
+				    ; Intro variables
+ 00000000 41 72 72 61 79	    progName    BYTE    "Array Sorting Demo", 0
+	   20 53 6F 72 74
+	   69 6E 67 20 44
+	   65 6D 6F 00
+ 00000013 62 79 20 5A 61	    authName    BYTE    "by Zach Colbert", 0
+	   63 68 20 43 6F
+	   6C 62 65 72 74
+	   00
+ 00000023  0000001E [		    hline       BYTE    HLINE_LENGTH DUP("-"), 0
+	    2D
+	   ] 00
+ 00000042  0000001E [		    dhline      BYTE    HLINE_LENGTH DUP("="), 0
+	    3D
+	   ] 00
 
-				; (insert variable definitions here)
+				    ; User input variables
+ 00000061 45 6E 74 65 72	    prompt1     BYTE    "Enter integer length of array [", 0
+	   20 69 6E 74 65
+	   67 65 72 20 6C
+	   65 6E 67 74 68
+	   20 6F 66 20 61
+	   72 72 61 79 20
+	   5B 00
+ 00000081 20 2D 20 00		    prompt2     BYTE    " - ", 0
+ 00000085 5D 3A 20 00		    prompt3     BYTE    "]: ", 0
+ 00000089 20 69 73 20 74	    tooHi       BYTE    " is too high. Try again.", 0
+	   6F 6F 20 68 69
+	   67 68 2E 20 54
+	   72 79 20 61 67
+	   61 69 6E 2E 00
+ 000000A2 20 69 73 20 74	    tooLo       BYTE    " is too low. Try again.", 0
+	   6F 6F 20 6C 6F
+	   77 2E 20 54 72
+	   79 20 61 67 61
+	   69 6E 2E 00
+ 000000BA 00000000		    arrLength       DWORD   ?
+
+				    ; Unsorted array variables
+ 000000BE 55 6E 73 6F 72	    unsortHead     BYTE    "Unsorted Array Contents", 0
+	   74 65 64 20 41
+	   72 72 61 79 20
+	   43 6F 6E 74 65
+	   6E 74 73 00
+
+				    ; Sorted array variables
+ 000000D6 53 6F 72 74 65	    sortHead       BYTE    "Sorted Array Contents", 0
+	   64 20 41 72 72
+	   61 79 20 43 6F
+	   6E 74 65 6E 74
+	   73 00
+
+				    ; Array space in memory
+				    ; How do?
+
+				    ; Array statistics variables
+ 000000EC 00000000		    arrMedian   DWORD   ?
+ 000000F0 00000000		    arrMean     DWORD   ?
 
  00000000			.code
  00000000			main PROC
+ 00000000  E8 0000001E		    call intro
 
-				; (insert executable instructions here)
-				    mWriteStr "This is a string",0
- 00000000  52		     1	    push    EDX
-template.asm(26) : warning A4006:too many arguments in macro call
- mWriteStr(1): Macro Called From
-  template.asm(26): Main Line Code
-			     1	    mov     EDX, OFFSET "This is a string"
-template.asm(26) : error A2084:constant value too large
- mWriteStr(2): Macro Called From
-  template.asm(26): Main Line Code
- 00000001  E8 00000000 E     1	    call    WriteString
- 00000006  E8 00000000 E     1	    call    Crlf
- 0000000B  5A		     1	    pop     EDX
+ 00000005  FF 35 000000BA R	    push arrLength
+ 0000000B  E8 0000005E		    call getUserInput
 
-					exit	; exit to operating system
- 0000000C  6A 00	   *	    push   +000000000h
- 0000000E  E8 00000000 E   *	    call   ExitProcess
- 00000013			main ENDP
+				    mWriteDec arrLength
+ 00000010  50		     1	    push    EAX
+ 00000011  A1 000000BA R     1	    mov     EAX, arrLength
+ 00000016  E8 00000000 E     1	    call    WriteDec
+ 0000001B  58		     1	    pop     EAX
 
-				; (insert additional procedures here)
+				    exit    ; exit to operating system
+ 0000001C  6A 00	   *	    push   +000000000h
+ 0000001E  E8 00000000 E   *	    call   ExitProcess
+ 00000023			main ENDP
+
+				; intro
+				;   Prints introductory information about the program.
+				;
+				;   Receives: 
+				;       Global variables progName, authName, dhline
+				;   Returns: 
+				;       None
+				;   Preconditions: 
+				;       None
+				;   Changes Registers: 
+				;       None
+ 00000023			intro PROC
+ 00000023  52			    push EDX
+				    mWriteString dhline
+ 00000024  52		     1	    push    EDX
+ 00000025  BA 00000042 R     1	    mov     EDX, OFFSET dhline
+ 0000002A  E8 00000000 E     1	    call    WriteString
+ 0000002F  5A		     1	    pop     EDX
+				    mNewLine
+ 00000030  E8 00000000 E     1	    call Crlf
+				    mWriteString progName
+ 00000035  52		     1	    push    EDX
+ 00000036  BA 00000000 R     1	    mov     EDX, OFFSET progName
+ 0000003B  E8 00000000 E     1	    call    WriteString
+ 00000040  5A		     1	    pop     EDX
+				    mNewLine
+ 00000041  E8 00000000 E     1	    call Crlf
+				    mWriteString authName
+ 00000046  52		     1	    push    EDX
+ 00000047  BA 00000013 R     1	    mov     EDX, OFFSET authName
+ 0000004C  E8 00000000 E     1	    call    WriteString
+ 00000051  5A		     1	    pop     EDX
+				    mNewLine
+ 00000052  E8 00000000 E     1	    call Crlf
+				    mWriteString dhline
+ 00000057  52		     1	    push    EDX
+ 00000058  BA 00000042 R     1	    mov     EDX, OFFSET dhline
+ 0000005D  E8 00000000 E     1	    call    WriteString
+ 00000062  5A		     1	    pop     EDX
+				    mNewLine
+ 00000063  E8 00000000 E     1	    call Crlf
+				    mNewLine
+ 00000068  E8 00000000 E     1	    call Crlf
+ 0000006D  5A			    pop EDX
+ 0000006E			intro ENDP
+
+				; getUserInput
+				;   Prompts the user for a single, unsigned integer input.
+				;   If the input is outside the given range, the user is prompted again.
+				;
+				;   Receives:
+				;       Global byte strings prompt1, prompt2, prompt3, tooHi, tooLo
+				;       Global constant DWORDs INPUT_MIN, INPUT_MAX
+				;       Reference to DWORD variable in which to store input.
+				;   Returns:
+				;       DWORD unsigned integer.
+				;   Preconditions:
+				;       None
+				;   Changes Registers:
+				;       None
+ 0000006E			getUserInput PROC    
+ 0000006E  55			    push EBP
+ 0000006F  8B EC		    mov EBP, ESP
+ 00000071  50			    push EAX
+ 00000072  52			    push EDX
+ 00000073  56			    push ESI
+
+ 00000074			    prompt:
+				        mWriteString prompt1
+ 00000074  52		     1	    push    EDX
+ 00000075  BA 00000061 R     1	    mov     EDX, OFFSET prompt1
+ 0000007A  E8 00000000 E     1	    call    WriteString
+ 0000007F  5A		     1	    pop     EDX
+				        mWriteDec INPUT_MIN
+ 00000080  50		     1	    push    EAX
+ 00000081  B8 0000000A	     1	    mov     EAX, INPUT_MIN
+ 00000086  E8 00000000 E     1	    call    WriteDec
+ 0000008B  58		     1	    pop     EAX
+				        mWriteString prompt2
+ 0000008C  52		     1	    push    EDX
+ 0000008D  BA 00000081 R     1	    mov     EDX, OFFSET prompt2
+ 00000092  E8 00000000 E     1	    call    WriteString
+ 00000097  5A		     1	    pop     EDX
+				        mWriteDec INPUT_MAX
+ 00000098  50		     1	    push    EAX
+ 00000099  B8 000000C8	     1	    mov     EAX, INPUT_MAX
+ 0000009E  E8 00000000 E     1	    call    WriteDec
+ 000000A3  58		     1	    pop     EAX
+				        mWriteString prompt3
+ 000000A4  52		     1	    push    EDX
+ 000000A5  BA 00000085 R     1	    mov     EDX, OFFSET prompt3
+ 000000AA  E8 00000000 E     1	    call    WriteString
+ 000000AF  5A		     1	    pop     EDX
+
+				    mReadDec EAX
+ 000000B0  50		     1	    push EAX
+ 000000B1  66| 9C	     1	    pushf
+ 000000B3  E8 00000000 E     1	    call ReadDec
+ 000000B8  89 00	     1	    mov [EAX], EAX
+ 000000BA  66| 9D	     1	    popf
+ 000000BC  58		     1	    pop EAX
+
+ 000000BD  83 F8 0A		    cmp EAX, INPUT_MIN
+ 000000C0  7C 07		    jl boundLo
+ 000000C2  3D 000000C8		    cmp EAX, INPUT_MAX
+ 000000C7  7F 21		    jg boundHi
+
+ 000000C9			    boundLo:
+				        mWriteDec EAX
+ 000000C9  50		     1	    push    EAX
+ 000000CA  8B C0	     1	    mov     EAX, EAX
+ 000000CC  E8 00000000 E     1	    call    WriteDec
+ 000000D1  58		     1	    pop     EAX
+				        mWriteString tooLo
+ 000000D2  52		     1	    push    EDX
+ 000000D3  BA 000000A2 R     1	    mov     EDX, OFFSET tooLo
+ 000000D8  E8 00000000 E     1	    call    WriteString
+ 000000DD  5A		     1	    pop     EDX
+				        mNewLine
+ 000000DE  E8 00000000 E     1	    call Crlf
+				        mNewLine
+ 000000E3  E8 00000000 E     1	    call Crlf
+ 000000E8  EB 8A		        jmp prompt
+
+ 000000EA			    boundHi:
+				        mWriteDec EAX
+ 000000EA  50		     1	    push    EAX
+ 000000EB  8B C0	     1	    mov     EAX, EAX
+ 000000ED  E8 00000000 E     1	    call    WriteDec
+ 000000F2  58		     1	    pop     EAX
+				        mWriteString tooHi
+ 000000F3  52		     1	    push    EDX
+ 000000F4  BA 00000089 R     1	    mov     EDX, OFFSET tooHi
+ 000000F9  E8 00000000 E     1	    call    WriteString
+ 000000FE  5A		     1	    pop     EDX
+				        mNewLine
+ 000000FF  E8 00000000 E     1	    call Crlf
+				        mNewLine
+ 00000104  E8 00000000 E     1	    call Crlf
+ 00000109  E9 FFFFFF66		        jmp prompt
+
+ 0000010E			    fin:
+ 0000010E  8B 75 08		        mov ESI, [EBP + 8]
+ 00000111  89 06		        mov [ESI], EAX
+
+ 00000113  5E			    pop ESI
+ 00000114  5A			    pop EDX
+ 00000115  58			    pop EAX
+ 00000116  5D			    pop EBP
+ 00000117  C2 0004		    ret 4
+ 0000011A			getUserInput ENDP
 
 				END main
-Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/12/19 12:32:59
-#Program Template     (template.asm			     Symbols 2 - 1
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/21/19 16:53:01
+ Arrays and Sorting     (hw4.asm			     Symbols 2 - 1
 
 
 
@@ -75,7 +381,20 @@ Macros:
 
                 N a m e                 Type
 
-mWriteStr  . . . . . . . . . . .	Proc
+mClearScreen . . . . . . . . . .	Proc
+mClrScr  . . . . . . . . . . . .	Proc
+mCrlf  . . . . . . . . . . . . .	Proc
+mNewLine . . . . . . . . . . . .	Proc
+mRandomRange . . . . . . . . . .	Proc
+mRandomize . . . . . . . . . . .	Proc
+mReadDec . . . . . . . . . . . .	Proc
+mReadFloat . . . . . . . . . . .	Proc
+mReadInt . . . . . . . . . . . .	Proc
+mReadString  . . . . . . . . . .	Proc
+mWriteDec  . . . . . . . . . . .	Proc
+mWriteFloat  . . . . . . . . . .	Proc
+mWriteInt  . . . . . . . . . . .	Proc
+mWriteString . . . . . . . . . .	Proc
 
 
 Structures and Unions:
@@ -166,8 +485,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000000 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000001E Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 000000F4 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000011A Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -274,7 +593,13 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000001E Public STDCALL
+getUserInput . . . . . . . . . .	P Near	 0000006E _TEXT	Length= 000000AC Public STDCALL
+  prompt . . . . . . . . . . . .	L Near	 00000074 _TEXT	
+  boundLo  . . . . . . . . . . .	L Near	 000000C9 _TEXT	
+  boundHi  . . . . . . . . . . .	L Near	 000000EA _TEXT	
+  fin  . . . . . . . . . . . . .	L Near	 0000010E _TEXT	
+intro  . . . . . . . . . . . . .	P Near	 00000023 _TEXT	Length= 0000004B Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000023 Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -348,6 +673,7 @@ HEAP_GROWABLE  . . . . . . . . .	Number	 00000002h
 HEAP_NO_SERIALIZE  . . . . . . .	Number	 00000001h   
 HEAP_REALLOC_IN_PLACE_ONLY . . .	Number	 00000010h   
 HEAP_ZERO_MEMORY . . . . . . . .	Number	 00000008h   
+HLINE_LENGTH . . . . . . . . . .	Number	 0000001Eh   
 IDABORT  . . . . . . . . . . . .	Number	 00000003h   
 IDCANCEL . . . . . . . . . . . .	Number	 00000002h   
 IDCLOSE  . . . . . . . . . . . .	Number	 00000008h   
@@ -360,6 +686,8 @@ IDRETRY  . . . . . . . . . . . .	Number	 00000004h
 IDTIMEOUT  . . . . . . . . . . .	Number	 00007D00h   
 IDTRYAGAIN . . . . . . . . . . .	Number	 0000000Ah   
 IDYES  . . . . . . . . . . . . .	Number	 00000006h   
+INPUT_MAX  . . . . . . . . . . .	Number	 000000C8h   
+INPUT_MIN  . . . . . . . . . . .	Number	 0000000Ah   
 INVALID_HANDLE_VALUE . . . . . .	Number	 -00000001h   
 KBDOWN_FLAG  . . . . . . . . . .	Number	 00000001h   
 KEY_EVENT  . . . . . . . . . . .	Number	 00000001h   
@@ -397,7 +725,10 @@ NULL . . . . . . . . . . . . . .	Number	 00000000h
 NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
 OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
 OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+PRNT_PER_LINE  . . . . . . . . .	Number	 0000000Ah   
 PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
+RAND_MAX . . . . . . . . . . . .	Number	 000003E7h   
+RAND_MIN . . . . . . . . . . . .	Number	 00000064h   
 RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h   
 RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
 ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
@@ -493,13 +824,19 @@ VK_UP  . . . . . . . . . . . . .	Number	 00000026h
 WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
 WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
 WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+arrLength  . . . . . . . . . . .	DWord	 000000BA _DATA	
+arrMean  . . . . . . . . . . . .	DWord	 000000F0 _DATA	
+arrMedian  . . . . . . . . . . .	DWord	 000000EC _DATA	
+authName . . . . . . . . . . . .	Byte	 00000013 _DATA	
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
+dhline . . . . . . . . . . . . .	Byte	 00000042 _DATA	
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
 gray . . . . . . . . . . . . . .	Number	 00000008h   
 green  . . . . . . . . . . . . .	Number	 00000002h   
+hline  . . . . . . . . . . . . .	Byte	 00000023 _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
@@ -507,10 +844,18 @@ lightGreen . . . . . . . . . . .	Number	 0000000Ah
 lightMagenta . . . . . . . . . .	Number	 0000000Dh   
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
+progName . . . . . . . . . . . .	Byte	 00000000 _DATA	
+prompt1  . . . . . . . . . . . .	Byte	 00000061 _DATA	
+prompt2  . . . . . . . . . . . .	Byte	 00000081 _DATA	
+prompt3  . . . . . . . . . . . .	Byte	 00000085 _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
+sortHead . . . . . . . . . . . .	Byte	 000000D6 _DATA	
+tooHi  . . . . . . . . . . . . .	Byte	 00000089 _DATA	
+tooLo  . . . . . . . . . . . . .	Byte	 000000A2 _DATA	
+unsortHead . . . . . . . . . . .	Byte	 000000BE _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
 
-	   1 Warnings
-	   1 Errors
+	   0 Warnings
+	   0 Errors
