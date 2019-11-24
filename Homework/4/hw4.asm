@@ -15,6 +15,7 @@ RAND_MIN = 100
 RAND_MAX = 999
 PRNT_PER_LINE = 10
 HLINE_LENGTH = 30
+DELIMITER EQU <", ", 0>
 
 .data
     ; Intro variables
@@ -29,16 +30,16 @@ HLINE_LENGTH = 30
     prompt3     BYTE    "]: ", 0
     tooHi       BYTE    " is too high. Try again.", 0
     tooLo       BYTE    " is too low. Try again.", 0
-    arrLength       DWORD   ?
+    arrLength   DWORD   ?
 
     ; Unsorted array variables
-    unsortHead     BYTE    "Unsorted Array Contents", 0
+    unsortHead  BYTE    "Unsorted Array Contents", 0
 
     ; Sorted array variables
-    sortHead       BYTE    "Sorted Array Contents", 0
+    sortHead    BYTE    "Sorted Array Contents", 0
 
     ; Array space in memory
-    ; How do?
+    list        DWORD   INPUT_MAX DUP(?)    ; Only need WORD b/c max is small
 
     ; Array statistics variables
     arrMedian   DWORD   ?
@@ -51,7 +52,7 @@ main PROC
     push OFFSET arrLength
     call getUserInput
 
-    mWriteDec arrLength
+
 
     exit    ; exit to operating system
 main ENDP
@@ -110,6 +111,8 @@ getUserInput PROC
         mWriteDec INPUT_MAX
         mWriteString prompt3
 
+    ; Writing to memory and reading from memory again is not optimal
+    ; But it's how the macro works
     mov ESI, [EBP + 8]
     mReadDec ESI
     mov EAX, [ESI]
@@ -141,5 +144,102 @@ getUserInput PROC
     pop EBP
     ret 4
 getUserInput ENDP
+
+; arrayFillRandom
+;   Fills an array with random numbers between RAND_MIN and RAND_MAX
+;
+;   Receives:
+;       Global constants RAND_MIN, RAND_MAX
+;       Pointer to DWORD array, via stack
+;       DWORD size of array, via stack
+;   Returns:
+;       Array filled with random unsigned integer values.
+;   Preconditions:
+;       Array size passed to this proc must be less or equal to
+;       allocated space in memory.
+;   Changes registers:
+;       None
+arrayFillRandom PROC
+    push EBP
+    mov EBP, ESP
+    push ECX
+    push ESI
+    pushf
+
+    mRandomize      ; Set random number seed
+    mov ESI, [EBP + 12]     ; Pointer to first array elem
+    mov ECX, [EBP + 8]      ; ECX = Array size
+
+    ; Use counted loop to fill array elements
+    topLoop:
+        ; Save a random number to the current element
+        mRandomRange ESI, RAND_MAX, RAND_MIN
+        add ESI, sizeof DWORD   ; Advance to next element
+        loop topLoop    ; Loop again if ECX != 0
+
+    postLoop:
+    popf
+    pop ESI
+    pop ECX
+    pop EBP
+    ret 8
+arrayFillRandom ENDP
+
+; arrayPrint
+;   Prints the contents of an array of unsigned ints.
+;
+;   Receives:
+;       Global constants, PRINT_PER_LINE and DELIMITER
+;       Pointer to DWORD array, via stack (reference).
+;       DWORD size of array, via stack (value).
+;       Pointer to BYTE string, via stack.
+;           (Prints additional info before array elements).
+;   Returns:
+;       Array contents printed to console, max PRINT_PER_LINE
+;       elements per line and delimited by string DELIMITER.
+;   Preconditions:
+;       None
+;   Changes Registers:
+;       None
+arrayPrint PROC
+    push EBP
+    mov EBP, ESP
+    push EAX
+    push ECX
+    push ESI
+    pushf
+
+    mov ESI, [EBP + 8]      ; Pointer to info string
+    mWriteString ESI
+
+    mov ESI, [EBP + 16]     ; Pointer to first array elem
+    mov ECX, [EBP + 12]     ; ECX = array size
+    mov EAX, 0              ; Init EAX = 0
+
+    topLoop:
+        mWriteDec [ESI]         ; Write element to console
+        add ESI, sizeof DWORD   ; Advance to next element
+        inc EAX                 ; EAX += 1
+        
+        cmp ECX, 1
+        je continue             ; Follow each element with a delimiter
+        mWriteString DELIMITER  ; Except after last element
+        
+        cmp EAX, PRINT_PER_LINE
+        jne continue            ; Insert newline every few elements
+        mNewLine
+
+        continue:
+            loop topLoop
+
+    mNewLine
+    mNewLine
+
+    popf
+    pop ESI
+    pop ECX
+    pop EAX
+    ret 12
+arrayPrint ENDP
 
 END main
