@@ -8,6 +8,46 @@ TITLE Arrays and Sorting     (hw4.asm)
 INCLUDE Irvine32.inc
 INCLUDE customMacros.inc
 
+; MACRO DEFINITIONS
+; mArrayIndex
+;   Advance ESI to the given DWORD array index.
+mArrayIndex MACRO array, i
+    push ECX
+    pushf
+
+    mov ESI, array
+    mov ECX, i
+
+    advance:
+        add ESI, sizeof DWORD
+        loop advance
+
+    popf
+    pop ECX
+ENDM
+
+; mArraySwap
+;   Swap two values in an array at indices i and j
+mArraySwap MACRO array, i, j
+    push ESI
+    push EDI
+    pushf
+
+    mArrayIndex array, i
+    push [ESI]          ; Get value from i
+    mov EDI, ESI        ; Save pointer to this index
+
+    mArrayIndex array, j
+    push [ESI]          ; Get value from j
+
+    pop [EDI]           ; Save [j] to i
+    pop [ESI]           ; Save [i] to j
+
+    popf
+    pop EDI
+    pop ESI
+ENDM
+
 ; CONSTANT DEFINITIONS
 INPUT_MIN = 10
 INPUT_MAX = 200
@@ -39,7 +79,7 @@ DELIMITER EQU <", ", 0>
     sortHead    BYTE    "Sorted Array Contents", 0
 
     ; Array space in memory
-    list        DWORD   INPUT_MAX DUP(?)    ; Only need WORD b/c max is small
+    list        DWORD   INPUT_MAX DUP(?)    ; Only need WORD b/c max is small?
 
     ; Array statistics variables
     arrMedian   DWORD   ?
@@ -241,5 +281,93 @@ arrayPrint PROC
     pop EAX
     ret 12
 arrayPrint ENDP
+
+; arrayQuickSort
+;   Uses the Quicksort algorithm to sort the given array in place.
+;   Based on info and algorithms from https://www.geeksforgeeks.org/quick-sort/
+;
+;   Receives:
+;       Pointer to DWORD array, via stack (reference).
+;       DWORD starting index, via stack (value). Initially call with 0.
+;       DWORD ending index, via stack (value). Initially call with max index.
+;   Returns:
+;       Sorted array in memory.
+;   Preconditions:
+;       None.
+;   Registers Changed:
+;       None.
+arrayQuickSort PROC
+    push EBP
+    mov EBP, ESP
+    push EAX
+    push EBX
+    pushf
+
+    mov EAX, [EBP + 12]     ; EAX = Starting index (lo)
+    cmp EAX, [EBP + 8]      ; Compare lo to ending index (hi)
+    jge postcon             ; if (lo < hi) { ... } else { return; }
+
+    call qsPartition        ; EAX = partition index (pi)
+    mov EBX, EAX
+    dec EAX         ; EAX = pi - 1
+    inc EBX         ; EBX = pi + 1
+
+    push [EBP + 16]         ; Array pointer
+    push [EBP + 12]         ; Same lo value
+    push EAX                ; Pass pi - 1 as hi
+    call arrayQuickSort     ; Sort the parts of the array up to pi
+
+    push [EBP + 16]         ; Array pointer
+    push EBX                ; Pass pi + 1 as lo
+    push [EBP + 8]          ; Same hi value
+    call arrayQuickSort     ; Sort the parts of the array after pi
+
+    postcon:
+    popf
+    pop EBX
+    pop EAX
+    pop EBP
+    ret 12
+arrayQuickSort ENDP
+
+; qsPartition
+qsPartition PROC    ; +16 array, +12 lo, +8 hi
+    push EBP
+    mov EBP, ESP
+    push ESI
+    push EBX
+    push ECX
+    pushf
+
+    mArrayIndex [EBP + 16], [EBP + 8]   ; ESI = (array + hi)
+    push [ESI]      ; Save pivot value to stack
+
+    mov EBX, [EBP + 12]
+    dec EBX             ; EBX = lo - 1
+    mArrayIndex [EBP + 16], [EBP + 12]      ; ESI (array + lo)
+    mov ECX, [EBP + 12]     ; Loop counter = lo
+
+    sortLoop:
+        cmp [ESI], [ESP]        ; Compare current value to pivot value
+        jge postLoop
+        inc EBX         ; If current value < pivot
+        mArraySwap [EBP + 16], EBX, ECX
+        add ESI, sizeof DWORD   ; Advance to next element
+        inc ECX                 ; Advance to next element
+        cmp ECX, [EBP + 8]
+        jl sortLoop
+
+    postLoop:
+        inc EBX             ; EBX = i + 1
+        mArraySwap [EBP + 16], EBX, [EBP + 8]   ; Swap [i+1] and [hi]
+        mov EAX, EBX        ; return i + 1
+
+    popf
+    pop ECX
+    pop EBX
+    pop ESI
+    pop EBP
+    ret 12
+qsPartition ENDP
 
 END main
