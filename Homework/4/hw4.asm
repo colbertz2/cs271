@@ -187,6 +187,7 @@ getUserInput PROC
         jmp prompt
 
     fin:
+    mNewLine
     pop ESI
     pop EDX
     pop EAX
@@ -289,6 +290,7 @@ arrayPrint PROC
     pop ESI
     pop ECX
     pop EAX
+    pop EBP
     ret 12
 arrayPrint ENDP
 
