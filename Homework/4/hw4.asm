@@ -92,7 +92,14 @@ main PROC
     push OFFSET arrLength
     call getUserInput
 
+    push OFFSET list
+    push arrLength
+    call arrayFillRandom
 
+    push OFFSET list
+    push arrLength
+    push OFFSET unsortHead
+    call arrayPrint
 
     exit    ; exit to operating system
 main ENDP
