@@ -12,6 +12,8 @@ INCLUDE customMacros.inc
 ; mArrayIndex
 ;   Advance ESI to the given DWORD array index.
 mArrayIndex MACRO array, i
+    LOCAL advance
+
     push ECX
     pushf
 
@@ -53,9 +55,8 @@ INPUT_MIN = 10
 INPUT_MAX = 200
 RAND_MIN = 100
 RAND_MAX = 999
-PRNT_PER_LINE = 10
+PRINT_PER_LINE = 10
 HLINE_LENGTH = 30
-DELIMITER EQU <", ", 0>
 
 .data
     ; Intro variables
@@ -73,10 +74,11 @@ DELIMITER EQU <", ", 0>
     arrLength   DWORD   ?
 
     ; Unsorted array variables
-    unsortHead  BYTE    "Unsorted Array Contents", 0
+    unsortHead  BYTE    "Unsorted Array Contents: ", 0
 
     ; Sorted array variables
-    sortHead    BYTE    "Sorted Array Contents", 0
+    sortHead    BYTE    "Sorted Array Contents: ", 0
+    delimiter   BYTE    ", ", 0
 
     ; Array space in memory
     list        DWORD   INPUT_MAX DUP(?)    ; Only need WORD b/c max is small?
@@ -117,13 +119,13 @@ main ENDP
 ;       None
 intro PROC
     push EDX
-    mWriteString dhline
+    mWriteString OFFSET dhline
     mNewLine
-    mWriteString progName
+    mWriteString OFFSET progName
     mNewLine
-    mWriteString authName
+    mWriteString OFFSET authName
     mNewLine
-    mWriteString dhline
+    mWriteString OFFSET dhline
     mNewLine
     mNewLine
     pop EDX
@@ -152,11 +154,11 @@ getUserInput PROC
     push ESI
 
     prompt:
-        mWriteString prompt1
+        mWriteString OFFSET prompt1
         mWriteDec INPUT_MIN
-        mWriteString prompt2
+        mWriteString OFFSET prompt2
         mWriteDec INPUT_MAX
-        mWriteString prompt3
+        mWriteString OFFSET prompt3
 
     ; Writing to memory and reading from memory again is not optimal
     ; But it's how the macro works
@@ -172,14 +174,14 @@ getUserInput PROC
 
     boundLo:
         mWriteDec EAX
-        mWriteString tooLo
+        mWriteString OFFSET tooLo
         mNewLine
         mNewLine
         jmp prompt
 
     boundHi:
         mWriteDec EAX
-        mWriteString tooHi
+        mWriteString OFFSET tooHi
         mNewLine
         mNewLine
         jmp prompt
@@ -258,6 +260,7 @@ arrayPrint PROC
 
     mov ESI, [EBP + 8]      ; Pointer to info string
     mWriteString ESI
+    mNewLine
 
     mov ESI, [EBP + 16]     ; Pointer to first array elem
     mov ECX, [EBP + 12]     ; ECX = array size
@@ -270,7 +273,7 @@ arrayPrint PROC
         
         cmp ECX, 1
         je continue             ; Follow each element with a delimiter
-        mWriteString DELIMITER  ; Except after last element
+        mWriteString OFFSET DELIMITER  ; Except after last element
         
         cmp EAX, PRINT_PER_LINE
         jne continue            ; Insert newline every few elements
@@ -344,6 +347,7 @@ qsPartition PROC    ; +16 array, +12 lo, +8 hi
     push ESI
     push EBX
     push ECX
+    push EDI
     pushf
 
     mArrayIndex [EBP + 16], [EBP + 8]   ; ESI = (array + hi)
@@ -355,7 +359,9 @@ qsPartition PROC    ; +16 array, +12 lo, +8 hi
     mov ECX, [EBP + 12]     ; Loop counter = lo
 
     sortLoop:
-        cmp [ESI], [ESP]        ; Compare current value to pivot value
+        mov EDI, [ESI]
+        mov EAX, [ESP]
+        cmp EDI, EAX        ; Compare current value to pivot value
         jge postLoop
         inc EBX         ; If current value < pivot
         mArraySwap [EBP + 16], EBX, ECX
@@ -370,6 +376,7 @@ qsPartition PROC    ; +16 array, +12 lo, +8 hi
         mov EAX, EBX        ; return i + 1
 
     popf
+    pop EDI
     pop ECX
     pop EBX
     pop ESI

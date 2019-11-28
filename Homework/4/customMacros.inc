@@ -60,7 +60,7 @@ ENDM
 
 mWriteString MACRO buffer
     push    EDX
-    mov     EDX, OFFSET buffer
+    mov     EDX, buffer
     call    WriteString
     pop     EDX
 ENDM
