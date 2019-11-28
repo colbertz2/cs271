@@ -13,6 +13,7 @@ INCLUDE customMacros.inc
 ;   Advance ESI to the given DWORD array index.
 mArrayIndex MACRO array, i
     LOCAL advance
+    LOCAL postloop
 
     push ECX
     pushf
@@ -20,10 +21,14 @@ mArrayIndex MACRO array, i
     mov ESI, array
     mov ECX, i
 
+    cmp ECX, 0
+    jz postloop
+
     advance:
         add ESI, sizeof DWORD
         loop advance
 
+    postloop:
     popf
     pop ECX
 ENDM
@@ -101,6 +106,18 @@ main PROC
     push OFFSET list
     push arrLength
     push OFFSET unsortHead
+    call arrayPrint
+
+    push OFFSET list
+    push 0              ; "Low" index for quicksort
+    mov EAX, arrLength
+    dec EAX
+    push EAX            ; "High" index for quicksort
+    call arrayQuickSort
+
+    push OFFSET list
+    push arrLength
+    push OFFSET sortHead
     call arrayPrint
 
     exit    ; exit to operating system
@@ -335,6 +352,12 @@ arrayQuickSort PROC
     call arrayQuickSort     ; Sort the parts of the array after pi
 
     postcon:
+    ; FOR DEBUG
+    push OFFSET list
+    push arrLength
+    push OFFSET delimiter
+    call arrayPrint
+
     popf
     pop EBX
     pop EAX
@@ -344,8 +367,8 @@ arrayQuickSort ENDP
 
 ; qsPartition
 qsPartition PROC    ; +16 array, +12 lo, +8 hi
-    push EBP
-    mov EBP, ESP
+    ;push EBP
+    ;mov EBP, ESP        Keep using the same stack frame!
     push ESI
     push EBX
     push ECX
@@ -353,7 +376,7 @@ qsPartition PROC    ; +16 array, +12 lo, +8 hi
     pushf
 
     mArrayIndex [EBP + 16], [EBP + 8]   ; ESI = (array + hi)
-    push [ESI]      ; Save pivot value to stack
+    mov EAX, [ESI]      ; Save pivot value to EAX
 
     mov EBX, [EBP + 12]
     dec EBX             ; EBX = lo - 1
@@ -362,7 +385,6 @@ qsPartition PROC    ; +16 array, +12 lo, +8 hi
 
     sortLoop:
         mov EDI, [ESI]
-        mov EAX, [ESP]
         cmp EDI, EAX        ; Compare current value to pivot value
         jge postLoop
         inc EBX         ; If current value < pivot
@@ -382,8 +404,8 @@ qsPartition PROC    ; +16 array, +12 lo, +8 hi
     pop ECX
     pop EBX
     pop ESI
-    pop EBP
-    ret 12
+    ;pop EBP
+    ret
 qsPartition ENDP
 
 END main

@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 23:36:08
  Arrays and Sorting     (hw4.asm			     Page 1 - 1
 
 
@@ -137,6 +137,7 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				;   Advance ESI to the given DWORD array index.
 				mArrayIndex MACRO array, i
 				    LOCAL advance
+				    LOCAL postloop
 
 				    push ECX
 				    pushf
@@ -144,10 +145,14 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				    mov ESI, array
 				    mov ECX, i
 
+				    cmp ECX, 0
+				    jz postloop
+
 				    advance:
 				        add ESI, sizeof DWORD
 				        loop advance
 
+				    postloop:
 				    popf
 				    pop ECX
 				ENDM
@@ -248,24 +253,36 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 
  00000000			.code
  00000000			main PROC
- 00000000  E8 00000036		    call intro
+ 00000000  E8 0000005E		    call intro
 
  00000005  68 000000BA R	    push OFFSET arrLength
- 0000000A  E8 00000078		    call getUserInput
+ 0000000A  E8 000000A0		    call getUserInput
 
  0000000F  68 000000F3 R	    push OFFSET list
  00000014  FF 35 000000BA R	    push arrLength
- 0000001A  E8 00000116		    call arrayFillRandom
+ 0000001A  E8 00000143		    call arrayFillRandom
 
  0000001F  68 000000F3 R	    push OFFSET list
  00000024  FF 35 000000BA R	    push arrLength
  0000002A  68 000000BE R	    push OFFSET unsortHead
- 0000002F  E8 00000135		    call arrayPrint
+ 0000002F  E8 00000162		    call arrayPrint
+
+ 00000034  68 000000F3 R	    push OFFSET list
+ 00000039  6A 00		    push 0              ; "Low" index for quicksort
+ 0000003B  A1 000000BA R	    mov EAX, arrLength
+ 00000040  48			    dec EAX
+ 00000041  50			    push EAX            ; "High" index for quicksort
+ 00000042  E8 000001B0		    call arrayQuickSort
+
+ 00000047  68 000000F3 R	    push OFFSET list
+ 0000004C  FF 35 000000BA R	    push arrLength
+ 00000052  68 000000D8 R	    push OFFSET sortHead
+ 00000057  E8 0000013A		    call arrayPrint
 
 				    exit    ; exit to operating system
- 00000034  6A 00	   *	    push   +000000000h
- 00000036  E8 00000000 E   *	    call   ExitProcess
- 0000003B			main ENDP
+ 0000005C  6A 00	   *	    push   +000000000h
+ 0000005E  E8 00000000 E   *	    call   ExitProcess
+ 00000063			main ENDP
 
 				; intro
 				;   Prints introductory information about the program.
@@ -278,41 +295,41 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				;       None
 				;   Changes Registers: 
 				;       None
- 0000003B			intro PROC
- 0000003B  52			    push EDX
+ 00000063			intro PROC
+ 00000063  52			    push EDX
 				    mWriteString OFFSET dhline
- 0000003C  52		     1	    push    EDX
- 0000003D  BA 00000042 R     1	    mov     EDX, OFFSET dhline
- 00000042  E8 00000000 E     1	    call    WriteString
- 00000047  5A		     1	    pop     EDX
+ 00000064  52		     1	    push    EDX
+ 00000065  BA 00000042 R     1	    mov     EDX, OFFSET dhline
+ 0000006A  E8 00000000 E     1	    call    WriteString
+ 0000006F  5A		     1	    pop     EDX
 				    mNewLine
- 00000048  E8 00000000 E     1	    call Crlf
+ 00000070  E8 00000000 E     1	    call Crlf
 				    mWriteString OFFSET progName
- 0000004D  52		     1	    push    EDX
- 0000004E  BA 00000000 R     1	    mov     EDX, OFFSET progName
- 00000053  E8 00000000 E     1	    call    WriteString
- 00000058  5A		     1	    pop     EDX
+ 00000075  52		     1	    push    EDX
+ 00000076  BA 00000000 R     1	    mov     EDX, OFFSET progName
+ 0000007B  E8 00000000 E     1	    call    WriteString
+ 00000080  5A		     1	    pop     EDX
 				    mNewLine
- 00000059  E8 00000000 E     1	    call Crlf
+ 00000081  E8 00000000 E     1	    call Crlf
 				    mWriteString OFFSET authName
- 0000005E  52		     1	    push    EDX
- 0000005F  BA 00000013 R     1	    mov     EDX, OFFSET authName
- 00000064  E8 00000000 E     1	    call    WriteString
- 00000069  5A		     1	    pop     EDX
+ 00000086  52		     1	    push    EDX
+ 00000087  BA 00000013 R     1	    mov     EDX, OFFSET authName
+ 0000008C  E8 00000000 E     1	    call    WriteString
+ 00000091  5A		     1	    pop     EDX
 				    mNewLine
- 0000006A  E8 00000000 E     1	    call Crlf
+ 00000092  E8 00000000 E     1	    call Crlf
 				    mWriteString OFFSET dhline
- 0000006F  52		     1	    push    EDX
- 00000070  BA 00000042 R     1	    mov     EDX, OFFSET dhline
- 00000075  E8 00000000 E     1	    call    WriteString
- 0000007A  5A		     1	    pop     EDX
+ 00000097  52		     1	    push    EDX
+ 00000098  BA 00000042 R     1	    mov     EDX, OFFSET dhline
+ 0000009D  E8 00000000 E     1	    call    WriteString
+ 000000A2  5A		     1	    pop     EDX
 				    mNewLine
- 0000007B  E8 00000000 E     1	    call Crlf
+ 000000A3  E8 00000000 E     1	    call Crlf
 				    mNewLine
- 00000080  E8 00000000 E     1	    call Crlf
- 00000085  5A			    pop EDX
- 00000086  C3			    ret
- 00000087			intro ENDP
+ 000000A8  E8 00000000 E     1	    call Crlf
+ 000000AD  5A			    pop EDX
+ 000000AE  C3			    ret
+ 000000AF			intro ENDP
 
 				; getUserInput
 				;   Prompts the user for a single, unsigned integer input.
@@ -328,99 +345,101 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				;       None
 				;   Changes Registers:
 				;       None
- 00000087			getUserInput PROC    
- 00000087  55			    push EBP
- 00000088  8B EC		    mov EBP, ESP
- 0000008A  50			    push EAX
- 0000008B  52			    push EDX
- 0000008C  56			    push ESI
+ 000000AF			getUserInput PROC    
+ 000000AF  55			    push EBP
+ 000000B0  8B EC		    mov EBP, ESP
+ 000000B2  50			    push EAX
+ 000000B3  52			    push EDX
+ 000000B4  56			    push ESI
 
- 0000008D			    prompt:
+ 000000B5			    prompt:
 				        mWriteString OFFSET prompt1
- 0000008D  52		     1	    push    EDX
- 0000008E  BA 00000061 R     1	    mov     EDX, OFFSET prompt1
- 00000093  E8 00000000 E     1	    call    WriteString
- 00000098  5A		     1	    pop     EDX
+ 000000B5  52		     1	    push    EDX
+ 000000B6  BA 00000061 R     1	    mov     EDX, OFFSET prompt1
+ 000000BB  E8 00000000 E     1	    call    WriteString
+ 000000C0  5A		     1	    pop     EDX
 				        mWriteDec INPUT_MIN
- 00000099  50		     1	    push    EAX
- 0000009A  B8 0000000A	     1	    mov     EAX, INPUT_MIN
- 0000009F  E8 00000000 E     1	    call    WriteDec
- 000000A4  58		     1	    pop     EAX
+ 000000C1  50		     1	    push    EAX
+ 000000C2  B8 0000000A	     1	    mov     EAX, INPUT_MIN
+ 000000C7  E8 00000000 E     1	    call    WriteDec
+ 000000CC  58		     1	    pop     EAX
 				        mWriteString OFFSET prompt2
- 000000A5  52		     1	    push    EDX
- 000000A6  BA 00000081 R     1	    mov     EDX, OFFSET prompt2
- 000000AB  E8 00000000 E     1	    call    WriteString
- 000000B0  5A		     1	    pop     EDX
+ 000000CD  52		     1	    push    EDX
+ 000000CE  BA 00000081 R     1	    mov     EDX, OFFSET prompt2
+ 000000D3  E8 00000000 E     1	    call    WriteString
+ 000000D8  5A		     1	    pop     EDX
 				        mWriteDec INPUT_MAX
- 000000B1  50		     1	    push    EAX
- 000000B2  B8 000000C8	     1	    mov     EAX, INPUT_MAX
- 000000B7  E8 00000000 E     1	    call    WriteDec
- 000000BC  58		     1	    pop     EAX
+ 000000D9  50		     1	    push    EAX
+ 000000DA  B8 000000C8	     1	    mov     EAX, INPUT_MAX
+ 000000DF  E8 00000000 E     1	    call    WriteDec
+ 000000E4  58		     1	    pop     EAX
 				        mWriteString OFFSET prompt3
- 000000BD  52		     1	    push    EDX
- 000000BE  BA 00000085 R     1	    mov     EDX, OFFSET prompt3
- 000000C3  E8 00000000 E     1	    call    WriteString
- 000000C8  5A		     1	    pop     EDX
+ 000000E5  52		     1	    push    EDX
+ 000000E6  BA 00000085 R     1	    mov     EDX, OFFSET prompt3
+ 000000EB  E8 00000000 E     1	    call    WriteString
+ 000000F0  5A		     1	    pop     EDX
 
 				    ; Writing to memory and reading from memory again is not optimal
 				    ; But it's how the macro works
- 000000C9  8B 75 08		    mov ESI, [EBP + 8]
+ 000000F1  8B 75 08		    mov ESI, [EBP + 8]
 				    mReadDec ESI
- 000000CC  50		     1	    push EAX
- 000000CD  66| 9C	     1	    pushf
- 000000CF  E8 00000000 E     1	    call ReadDec
- 000000D4  89 06	     1	    mov [ESI], EAX
- 000000D6  66| 9D	     1	    popf
- 000000D8  58		     1	    pop EAX
- 000000D9  8B 06		    mov EAX, [ESI]
+ 000000F4  50		     1	    push EAX
+ 000000F5  66| 9C	     1	    pushf
+ 000000F7  E8 00000000 E     1	    call ReadDec
+ 000000FC  89 06	     1	    mov [ESI], EAX
+ 000000FE  66| 9D	     1	    popf
+ 00000100  58		     1	    pop EAX
+ 00000101  8B 06		    mov EAX, [ESI]
 
- 000000DB  83 F8 0A		    cmp EAX, INPUT_MIN
- 000000DE  7C 09		    jl boundLo
- 000000E0  3D 000000C8		    cmp EAX, INPUT_MAX
- 000000E5  7F 23		    jg boundHi
- 000000E7  EB 45		    jmp fin
+ 00000103  83 F8 0A		    cmp EAX, INPUT_MIN
+ 00000106  7C 09		    jl boundLo
+ 00000108  3D 000000C8		    cmp EAX, INPUT_MAX
+ 0000010D  7F 23		    jg boundHi
+ 0000010F  EB 45		    jmp fin
 
- 000000E9			    boundLo:
+ 00000111			    boundLo:
 				        mWriteDec EAX
- 000000E9  50		     1	    push    EAX
- 000000EA  8B C0	     1	    mov     EAX, EAX
- 000000EC  E8 00000000 E     1	    call    WriteDec
- 000000F1  58		     1	    pop     EAX
+ 00000111  50		     1	    push    EAX
+ 00000112  8B C0	     1	    mov     EAX, EAX
+ 00000114  E8 00000000 E     1	    call    WriteDec
+ 00000119  58		     1	    pop     EAX
 				        mWriteString OFFSET tooLo
- 000000F2  52		     1	    push    EDX
- 000000F3  BA 000000A2 R     1	    mov     EDX, OFFSET tooLo
- 000000F8  E8 00000000 E     1	    call    WriteString
- 000000FD  5A		     1	    pop     EDX
+ 0000011A  52		     1	    push    EDX
+ 0000011B  BA 000000A2 R     1	    mov     EDX, OFFSET tooLo
+ 00000120  E8 00000000 E     1	    call    WriteString
+ 00000125  5A		     1	    pop     EDX
 				        mNewLine
- 000000FE  E8 00000000 E     1	    call Crlf
+ 00000126  E8 00000000 E     1	    call Crlf
 				        mNewLine
- 00000103  E8 00000000 E     1	    call Crlf
- 00000108  EB 83		        jmp prompt
+ 0000012B  E8 00000000 E     1	    call Crlf
+ 00000130  EB 83		        jmp prompt
 
- 0000010A			    boundHi:
+ 00000132			    boundHi:
 				        mWriteDec EAX
- 0000010A  50		     1	    push    EAX
- 0000010B  8B C0	     1	    mov     EAX, EAX
- 0000010D  E8 00000000 E     1	    call    WriteDec
- 00000112  58		     1	    pop     EAX
+ 00000132  50		     1	    push    EAX
+ 00000133  8B C0	     1	    mov     EAX, EAX
+ 00000135  E8 00000000 E     1	    call    WriteDec
+ 0000013A  58		     1	    pop     EAX
 				        mWriteString OFFSET tooHi
- 00000113  52		     1	    push    EDX
- 00000114  BA 00000089 R     1	    mov     EDX, OFFSET tooHi
- 00000119  E8 00000000 E     1	    call    WriteString
- 0000011E  5A		     1	    pop     EDX
+ 0000013B  52		     1	    push    EDX
+ 0000013C  BA 00000089 R     1	    mov     EDX, OFFSET tooHi
+ 00000141  E8 00000000 E     1	    call    WriteString
+ 00000146  5A		     1	    pop     EDX
 				        mNewLine
- 0000011F  E8 00000000 E     1	    call Crlf
+ 00000147  E8 00000000 E     1	    call Crlf
 				        mNewLine
- 00000124  E8 00000000 E     1	    call Crlf
- 00000129  E9 FFFFFF5F		        jmp prompt
+ 0000014C  E8 00000000 E     1	    call Crlf
+ 00000151  E9 FFFFFF5F		        jmp prompt
 
- 0000012E			    fin:
- 0000012E  5E			    pop ESI
- 0000012F  5A			    pop EDX
- 00000130  58			    pop EAX
- 00000131  5D			    pop EBP
- 00000132  C2 0004		    ret 4
- 00000135			getUserInput ENDP
+ 00000156			    fin:
+				    mNewLine
+ 00000156  E8 00000000 E     1	    call Crlf
+ 0000015B  5E			    pop ESI
+ 0000015C  5A			    pop EDX
+ 0000015D  58			    pop EAX
+ 0000015E  5D			    pop EBP
+ 0000015F  C2 0004		    ret 4
+ 00000162			getUserInput ENDP
 
 				; arrayFillRandom
 				;   Fills an array with random numbers between RAND_MIN and RAND_MAX
@@ -436,40 +455,40 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				;       allocated space in memory.
 				;   Changes registers:
 				;       None
- 00000135			arrayFillRandom PROC
- 00000135  55			    push EBP
- 00000136  8B EC		    mov EBP, ESP
- 00000138  51			    push ECX
- 00000139  56			    push ESI
- 0000013A  66| 9C		    pushf
+ 00000162			arrayFillRandom PROC
+ 00000162  55			    push EBP
+ 00000163  8B EC		    mov EBP, ESP
+ 00000165  51			    push ECX
+ 00000166  56			    push ESI
+ 00000167  66| 9C		    pushf
 
 				    mRandomize      ; Set random number seed
- 0000013C  E8 00000000 E     1	    call Randomize
- 00000141  8B 75 0C		    mov ESI, [EBP + 12]     ; Pointer to first array elem
- 00000144  8B 4D 08		    mov ECX, [EBP + 8]      ; ECX = Array size
+ 00000169  E8 00000000 E     1	    call Randomize
+ 0000016E  8B 75 0C		    mov ESI, [EBP + 12]     ; Pointer to first array elem
+ 00000171  8B 4D 08		    mov ECX, [EBP + 8]      ; ECX = Array size
 
 				    ; Use counted loop to fill array elements
- 00000147			    topLoop:
+ 00000174			    topLoop:
 				        ; Save a random number to the current element
 				        mRandomRange ESI, RAND_MAX, RAND_MIN
- 00000147  50		     1	    push EAX
- 00000148  B8 000003E7	     1	    mov EAX, RAND_MAX
- 0000014D  83 E8 64	     1	    sub EAX, RAND_MIN
- 00000150  40		     1	    inc EAX
- 00000151  E8 00000000 E     1	    call RandomRange
- 00000156  83 C0 64	     1	    add EAX, RAND_MIN
- 00000159  89 06	     1	    mov [ESI], EAX
- 0000015B  58		     1	    pop EAX
- 0000015C  83 C6 04		        add ESI, sizeof DWORD   ; Advance to next element
- 0000015F  E2 E6		        loop topLoop    ; Loop again if ECX != 0
+ 00000174  50		     1	    push EAX
+ 00000175  B8 000003E7	     1	    mov EAX, RAND_MAX
+ 0000017A  83 E8 64	     1	    sub EAX, RAND_MIN
+ 0000017D  40		     1	    inc EAX
+ 0000017E  E8 00000000 E     1	    call RandomRange
+ 00000183  83 C0 64	     1	    add EAX, RAND_MIN
+ 00000186  89 06	     1	    mov [ESI], EAX
+ 00000188  58		     1	    pop EAX
+ 00000189  83 C6 04		        add ESI, sizeof DWORD   ; Advance to next element
+ 0000018C  E2 E6		        loop topLoop    ; Loop again if ECX != 0
 
- 00000161			    postLoop:
- 00000161  66| 9D		    popf
- 00000163  5E			    pop ESI
- 00000164  59			    pop ECX
- 00000165  5D			    pop EBP
- 00000166  C2 0008		    ret 8
- 00000169			arrayFillRandom ENDP
+ 0000018E			    postLoop:
+ 0000018E  66| 9D		    popf
+ 00000190  5E			    pop ESI
+ 00000191  59			    pop ECX
+ 00000192  5D			    pop EBP
+ 00000193  C2 0008		    ret 8
+ 00000196			arrayFillRandom ENDP
 
 				; arrayPrint
 				;   Prints the contents of an array of unsigned ints.
@@ -487,64 +506,64 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				;       None
 				;   Changes Registers:
 				;       None
- 00000169			arrayPrint PROC
- 00000169  55			    push EBP
- 0000016A  8B EC		    mov EBP, ESP
- 0000016C  50			    push EAX
- 0000016D  51			    push ECX
- 0000016E  56			    push ESI
- 0000016F  66| 9C		    pushf
+ 00000196			arrayPrint PROC
+ 00000196  55			    push EBP
+ 00000197  8B EC		    mov EBP, ESP
+ 00000199  50			    push EAX
+ 0000019A  51			    push ECX
+ 0000019B  56			    push ESI
+ 0000019C  66| 9C		    pushf
 
- 00000171  8B 75 08		    mov ESI, [EBP + 8]      ; Pointer to info string
+ 0000019E  8B 75 08		    mov ESI, [EBP + 8]      ; Pointer to info string
 				    mWriteString ESI
- 00000174  52		     1	    push    EDX
- 00000175  8B D6	     1	    mov     EDX, ESI
- 00000177  E8 00000000 E     1	    call    WriteString
- 0000017C  5A		     1	    pop     EDX
+ 000001A1  52		     1	    push    EDX
+ 000001A2  8B D6	     1	    mov     EDX, ESI
+ 000001A4  E8 00000000 E     1	    call    WriteString
+ 000001A9  5A		     1	    pop     EDX
 				    mNewLine
- 0000017D  E8 00000000 E     1	    call Crlf
+ 000001AA  E8 00000000 E     1	    call Crlf
 
- 00000182  8B 75 10		    mov ESI, [EBP + 16]     ; Pointer to first array elem
- 00000185  8B 4D 0C		    mov ECX, [EBP + 12]     ; ECX = array size
- 00000188  B8 00000000		    mov EAX, 0              ; Init EAX = 0
+ 000001AF  8B 75 10		    mov ESI, [EBP + 16]     ; Pointer to first array elem
+ 000001B2  8B 4D 0C		    mov ECX, [EBP + 12]     ; ECX = array size
+ 000001B5  B8 00000000		    mov EAX, 0              ; Init EAX = 0
 
- 0000018D			    topLoop:
+ 000001BA			    topLoop:
 				        mWriteDec [ESI]         ; Write element to console
- 0000018D  50		     1	    push    EAX
- 0000018E  8B 06	     1	    mov     EAX, [ESI]
- 00000190  E8 00000000 E     1	    call    WriteDec
- 00000195  58		     1	    pop     EAX
- 00000196  83 C6 04		        add ESI, sizeof DWORD   ; Advance to next element
- 00000199  40			        inc EAX                 ; EAX += 1
+ 000001BA  50		     1	    push    EAX
+ 000001BB  8B 06	     1	    mov     EAX, [ESI]
+ 000001BD  E8 00000000 E     1	    call    WriteDec
+ 000001C2  58		     1	    pop     EAX
+ 000001C3  83 C6 04		        add ESI, sizeof DWORD   ; Advance to next element
+ 000001C6  40			        inc EAX                 ; EAX += 1
 				        
- 0000019A  83 F9 01		        cmp ECX, 1
- 0000019D  74 16		        je continue             ; Follow each element with a delimiter
+ 000001C7  83 F9 01		        cmp ECX, 1
+ 000001CA  74 16		        je continue             ; Follow each element with a delimiter
 				        mWriteString OFFSET DELIMITER  ; Except after last element
- 0000019F  52		     1	    push    EDX
- 000001A0  BA 000000F0 R     1	    mov     EDX, OFFSET DELIMITER
- 000001A5  E8 00000000 E     1	    call    WriteString
- 000001AA  5A		     1	    pop     EDX
+ 000001CC  52		     1	    push    EDX
+ 000001CD  BA 000000F0 R     1	    mov     EDX, OFFSET DELIMITER
+ 000001D2  E8 00000000 E     1	    call    WriteString
+ 000001D7  5A		     1	    pop     EDX
 				        
- 000001AB  83 F8 0A		        cmp EAX, PRINT_PER_LINE
- 000001AE  75 05		        jne continue            ; Insert newline every few elements
+ 000001D8  83 F8 0A		        cmp EAX, PRINT_PER_LINE
+ 000001DB  75 05		        jne continue            ; Insert newline every few elements
 				        mNewLine
- 000001B0  E8 00000000 E     1	    call Crlf
+ 000001DD  E8 00000000 E     1	    call Crlf
 
- 000001B5			        continue:
- 000001B5  E2 D6		            loop topLoop
+ 000001E2			        continue:
+ 000001E2  E2 D6		            loop topLoop
 
 				    mNewLine
- 000001B7  E8 00000000 E     1	    call Crlf
+ 000001E4  E8 00000000 E     1	    call Crlf
 				    mNewLine
- 000001BC  E8 00000000 E     1	    call Crlf
+ 000001E9  E8 00000000 E     1	    call Crlf
 
- 000001C1  66| 9D		    popf
- 000001C3  5E			    pop ESI
- 000001C4  59			    pop ECX
- 000001C5  58			    pop EAX
- 000001C6  5D			    pop EBP
- 000001C7  C2 000C		    ret 12
- 000001CA			arrayPrint ENDP
+ 000001EE  66| 9D		    popf
+ 000001F0  5E			    pop ESI
+ 000001F1  59			    pop ECX
+ 000001F2  58			    pop EAX
+ 000001F3  5D			    pop EBP
+ 000001F4  C2 000C		    ret 12
+ 000001F7			arrayPrint ENDP
 
 				; arrayQuickSort
 				;   Uses the Quicksort algorithm to sort the given array in place.
@@ -560,162 +579,185 @@ Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
 				;       None.
 				;   Registers Changed:
 				;       None.
- 000001CA			arrayQuickSort PROC
- 000001CA  55			    push EBP
- 000001CB  8B EC		    mov EBP, ESP
- 000001CD  50			    push EAX
- 000001CE  53			    push EBX
- 000001CF  66| 9C		    pushf
+ 000001F7			arrayQuickSort PROC
+ 000001F7  55			    push EBP
+ 000001F8  8B EC		    mov EBP, ESP
+ 000001FA  50			    push EAX
+ 000001FB  53			    push EBX
+ 000001FC  66| 9C		    pushf
 
- 000001D1  8B 45 0C		    mov EAX, [EBP + 12]     ; EAX = Starting index (lo)
- 000001D4  3B 45 08		    cmp EAX, [EBP + 8]      ; Compare lo to ending index (hi)
- 000001D7  7D 21		    jge postcon             ; if (lo < hi) { ... } else { return; }
+ 000001FE  8B 45 0C		    mov EAX, [EBP + 12]     ; EAX = Starting index (lo)
+ 00000201  3B 45 08		    cmp EAX, [EBP + 8]      ; Compare lo to ending index (hi)
+ 00000204  7D 21		    jge postcon             ; if (lo < hi) { ... } else { return; }
 
- 000001D9  E8 00000024		    call qsPartition        ; EAX = partition index (pi)
- 000001DE  8B D8		    mov EBX, EAX
- 000001E0  48			    dec EAX         ; EAX = pi - 1
- 000001E1  43			    inc EBX         ; EBX = pi + 1
+ 00000206  E8 00000039		    call qsPartition        ; EAX = partition index (pi)
+ 0000020B  8B D8		    mov EBX, EAX
+ 0000020D  48			    dec EAX         ; EAX = pi - 1
+ 0000020E  43			    inc EBX         ; EBX = pi + 1
 
- 000001E2  FF 75 10		    push [EBP + 16]         ; Array pointer
- 000001E5  FF 75 0C		    push [EBP + 12]         ; Same lo value
- 000001E8  50			    push EAX                ; Pass pi - 1 as hi
- 000001E9  E8 FFFFFFDC		    call arrayQuickSort     ; Sort the parts of the array up to pi
+ 0000020F  FF 75 10		    push [EBP + 16]         ; Array pointer
+ 00000212  FF 75 0C		    push [EBP + 12]         ; Same lo value
+ 00000215  50			    push EAX                ; Pass pi - 1 as hi
+ 00000216  E8 FFFFFFDC		    call arrayQuickSort     ; Sort the parts of the array up to pi
 
- 000001EE  FF 75 10		    push [EBP + 16]         ; Array pointer
- 000001F1  53			    push EBX                ; Pass pi + 1 as lo
- 000001F2  FF 75 08		    push [EBP + 8]          ; Same hi value
- 000001F5  E8 FFFFFFD0		    call arrayQuickSort     ; Sort the parts of the array after pi
+ 0000021B  FF 75 10		    push [EBP + 16]         ; Array pointer
+ 0000021E  53			    push EBX                ; Pass pi + 1 as lo
+ 0000021F  FF 75 08		    push [EBP + 8]          ; Same hi value
+ 00000222  E8 FFFFFFD0		    call arrayQuickSort     ; Sort the parts of the array after pi
 
- 000001FA			    postcon:
- 000001FA  66| 9D		    popf
- 000001FC  5B			    pop EBX
- 000001FD  58			    pop EAX
- 000001FE  5D			    pop EBP
- 000001FF  C2 000C		    ret 12
- 00000202			arrayQuickSort ENDP
+ 00000227			    postcon:
+				    ; FOR DEBUG
+ 00000227  68 000000F3 R	    push OFFSET list
+ 0000022C  FF 35 000000BA R	    push arrLength
+ 00000232  68 000000F0 R	    push OFFSET delimiter
+ 00000237  E8 FFFFFF5A		    call arrayPrint
+
+ 0000023C  66| 9D		    popf
+ 0000023E  5B			    pop EBX
+ 0000023F  58			    pop EAX
+ 00000240  5D			    pop EBP
+ 00000241  C2 000C		    ret 12
+ 00000244			arrayQuickSort ENDP
 
 				; qsPartition
- 00000202			qsPartition PROC    ; +16 array, +12 lo, +8 hi
- 00000202  55			    push EBP
- 00000203  8B EC		    mov EBP, ESP
- 00000205  56			    push ESI
- 00000206  53			    push EBX
- 00000207  51			    push ECX
- 00000208  57			    push EDI
- 00000209  66| 9C		    pushf
+ 00000244			qsPartition PROC    ; +16 array, +12 lo, +8 hi
+				    ;push EBP
+				    ;mov EBP, ESP        Keep using the same stack frame!
+ 00000244  56			    push ESI
+ 00000245  53			    push EBX
+ 00000246  51			    push ECX
+ 00000247  57			    push EDI
+ 00000248  66| 9C		    pushf
 
 				    mArrayIndex [EBP + 16], [EBP + 8]   ; ESI = (array + hi)
- 0000020B  51		     1	    push ECX
- 0000020C  66| 9C	     1	    pushf
- 0000020E  8B 75 10	     1	    mov ESI, [EBP + 16]
- 00000211  8B 4D 08	     1	    mov ECX, [EBP + 8]
- 00000214		     1	    ??0000:
- 00000214  83 C6 04	     1	        add ESI, sizeof DWORD
- 00000217  E2 FB	     1	        loop ??0000
- 00000219  66| 9D	     1	    popf
- 0000021B  59		     1	    pop ECX
- 0000021C  FF 36		    push [ESI]      ; Save pivot value to stack
+ 0000024A  51		     1	    push ECX
+ 0000024B  66| 9C	     1	    pushf
+ 0000024D  8B 75 10	     1	    mov ESI, [EBP + 16]
+ 00000250  8B 4D 08	     1	    mov ECX, [EBP + 8]
+ 00000253  83 F9 00	     1	    cmp ECX, 0
+ 00000256  74 05	     1	    jz ??0001
+ 00000258		     1	    ??0000:
+ 00000258  83 C6 04	     1	        add ESI, sizeof DWORD
+ 0000025B  E2 FB	     1	        loop ??0000
+ 0000025D		     1	    ??0001:
+ 0000025D  66| 9D	     1	    popf
+ 0000025F  59		     1	    pop ECX
+ 00000260  8B 06		    mov EAX, [ESI]      ; Save pivot value to EAX
 
- 0000021E  8B 5D 0C		    mov EBX, [EBP + 12]
- 00000221  4B			    dec EBX             ; EBX = lo - 1
+ 00000262  8B 5D 0C		    mov EBX, [EBP + 12]
+ 00000265  4B			    dec EBX             ; EBX = lo - 1
 				    mArrayIndex [EBP + 16], [EBP + 12]      ; ESI (array + lo)
- 00000222  51		     1	    push ECX
- 00000223  66| 9C	     1	    pushf
- 00000225  8B 75 10	     1	    mov ESI, [EBP + 16]
- 00000228  8B 4D 0C	     1	    mov ECX, [EBP + 12]
- 0000022B		     1	    ??0001:
- 0000022B  83 C6 04	     1	        add ESI, sizeof DWORD
- 0000022E  E2 FB	     1	        loop ??0001
- 00000230  66| 9D	     1	    popf
- 00000232  59		     1	    pop ECX
- 00000233  8B 4D 0C		    mov ECX, [EBP + 12]     ; Loop counter = lo
+ 00000266  51		     1	    push ECX
+ 00000267  66| 9C	     1	    pushf
+ 00000269  8B 75 10	     1	    mov ESI, [EBP + 16]
+ 0000026C  8B 4D 0C	     1	    mov ECX, [EBP + 12]
+ 0000026F  83 F9 00	     1	    cmp ECX, 0
+ 00000272  74 05	     1	    jz ??0003
+ 00000274		     1	    ??0002:
+ 00000274  83 C6 04	     1	        add ESI, sizeof DWORD
+ 00000277  E2 FB	     1	        loop ??0002
+ 00000279		     1	    ??0003:
+ 00000279  66| 9D	     1	    popf
+ 0000027B  59		     1	    pop ECX
+ 0000027C  8B 4D 0C		    mov ECX, [EBP + 12]     ; Loop counter = lo
 
- 00000236			    sortLoop:
- 00000236  8B 3E		        mov EDI, [ESI]
- 00000238  8B 04 24		        mov EAX, [ESP]
- 0000023B  3B F8		        cmp EDI, EAX        ; Compare current value to pivot value
- 0000023D  7D 3C		        jge postLoop
- 0000023F  43			        inc EBX         ; If current value < pivot
+ 0000027F			    sortLoop:
+ 0000027F  8B 3E		        mov EDI, [ESI]
+ 00000281  3B F8		        cmp EDI, EAX        ; Compare current value to pivot value
+ 00000283  7D 46		        jge postLoop
+ 00000285  43			        inc EBX         ; If current value < pivot
 				        mArraySwap [EBP + 16], EBX, ECX
- 00000240  56		     1	    push ESI
- 00000241  57		     1	    push EDI
- 00000242  66| 9C	     1	    pushf
- 00000244  51		     2	    push ECX
- 00000245  66| 9C	     2	    pushf
- 00000247  8B 75 10	     2	    mov ESI, [EBP + 16]
- 0000024A  8B CB	     2	    mov ECX, EBX
- 0000024C		     2	    ??0002:
- 0000024C  83 C6 04	     2	        add ESI, sizeof DWORD
- 0000024F  E2 FB	     2	        loop ??0002
- 00000251  66| 9D	     2	    popf
- 00000253  59		     2	    pop ECX
- 00000254  FF 36	     1	    push [ESI]          ; Get value from i
- 00000256  8B FE	     1	    mov EDI, ESI        ; Save pointer to this index
- 00000258  51		     2	    push ECX
- 00000259  66| 9C	     2	    pushf
- 0000025B  8B 75 10	     2	    mov ESI, [EBP + 16]
- 0000025E  8B C9	     2	    mov ECX, ECX
- 00000260		     2	    ??0003:
- 00000260  83 C6 04	     2	        add ESI, sizeof DWORD
- 00000263  E2 FB	     2	        loop ??0003
- 00000265  66| 9D	     2	    popf
- 00000267  59		     2	    pop ECX
- 00000268  FF 36	     1	    push [ESI]          ; Get value from j
- 0000026A  8F 07	     1	    pop [EDI]           ; Save [j] to i
- 0000026C  8F 06	     1	    pop [ESI]           ; Save [i] to j
- 0000026E  66| 9D	     1	    popf
- 00000270  5F		     1	    pop EDI
- 00000271  5E		     1	    pop ESI
- 00000272  83 C6 04		        add ESI, sizeof DWORD   ; Advance to next element
- 00000275  41			        inc ECX                 ; Advance to next element
- 00000276  3B 4D 08		        cmp ECX, [EBP + 8]
- 00000279  7C BB		        jl sortLoop
+ 00000286  56		     1	    push ESI
+ 00000287  57		     1	    push EDI
+ 00000288  66| 9C	     1	    pushf
+ 0000028A  51		     2	    push ECX
+ 0000028B  66| 9C	     2	    pushf
+ 0000028D  8B 75 10	     2	    mov ESI, [EBP + 16]
+ 00000290  8B CB	     2	    mov ECX, EBX
+ 00000292  83 F9 00	     2	    cmp ECX, 0
+ 00000295  74 05	     2	    jz ??0005
+ 00000297		     2	    ??0004:
+ 00000297  83 C6 04	     2	        add ESI, sizeof DWORD
+ 0000029A  E2 FB	     2	        loop ??0004
+ 0000029C		     2	    ??0005:
+ 0000029C  66| 9D	     2	    popf
+ 0000029E  59		     2	    pop ECX
+ 0000029F  FF 36	     1	    push [ESI]          ; Get value from i
+ 000002A1  8B FE	     1	    mov EDI, ESI        ; Save pointer to this index
+ 000002A3  51		     2	    push ECX
+ 000002A4  66| 9C	     2	    pushf
+ 000002A6  8B 75 10	     2	    mov ESI, [EBP + 16]
+ 000002A9  8B C9	     2	    mov ECX, ECX
+ 000002AB  83 F9 00	     2	    cmp ECX, 0
+ 000002AE  74 05	     2	    jz ??0007
+ 000002B0		     2	    ??0006:
+ 000002B0  83 C6 04	     2	        add ESI, sizeof DWORD
+ 000002B3  E2 FB	     2	        loop ??0006
+ 000002B5		     2	    ??0007:
+ 000002B5  66| 9D	     2	    popf
+ 000002B7  59		     2	    pop ECX
+ 000002B8  FF 36	     1	    push [ESI]          ; Get value from j
+ 000002BA  8F 07	     1	    pop [EDI]           ; Save [j] to i
+ 000002BC  8F 06	     1	    pop [ESI]           ; Save [i] to j
+ 000002BE  66| 9D	     1	    popf
+ 000002C0  5F		     1	    pop EDI
+ 000002C1  5E		     1	    pop ESI
+ 000002C2  83 C6 04		        add ESI, sizeof DWORD   ; Advance to next element
+ 000002C5  41			        inc ECX                 ; Advance to next element
+ 000002C6  3B 4D 08		        cmp ECX, [EBP + 8]
+ 000002C9  7C B4		        jl sortLoop
 
- 0000027B			    postLoop:
- 0000027B  43			        inc EBX             ; EBX = i + 1
+ 000002CB			    postLoop:
+ 000002CB  43			        inc EBX             ; EBX = i + 1
 				        mArraySwap [EBP + 16], EBX, [EBP + 8]   ; Swap [i+1] and [hi]
- 0000027C  56		     1	    push ESI
- 0000027D  57		     1	    push EDI
- 0000027E  66| 9C	     1	    pushf
- 00000280  51		     2	    push ECX
- 00000281  66| 9C	     2	    pushf
- 00000283  8B 75 10	     2	    mov ESI, [EBP + 16]
- 00000286  8B CB	     2	    mov ECX, EBX
- 00000288		     2	    ??0004:
- 00000288  83 C6 04	     2	        add ESI, sizeof DWORD
- 0000028B  E2 FB	     2	        loop ??0004
- 0000028D  66| 9D	     2	    popf
- 0000028F  59		     2	    pop ECX
- 00000290  FF 36	     1	    push [ESI]          ; Get value from i
- 00000292  8B FE	     1	    mov EDI, ESI        ; Save pointer to this index
- 00000294  51		     2	    push ECX
- 00000295  66| 9C	     2	    pushf
- 00000297  8B 75 10	     2	    mov ESI, [EBP + 16]
- 0000029A  8B 4D 08	     2	    mov ECX, [EBP + 8]
- 0000029D		     2	    ??0005:
- 0000029D  83 C6 04	     2	        add ESI, sizeof DWORD
- 000002A0  E2 FB	     2	        loop ??0005
- 000002A2  66| 9D	     2	    popf
- 000002A4  59		     2	    pop ECX
- 000002A5  FF 36	     1	    push [ESI]          ; Get value from j
- 000002A7  8F 07	     1	    pop [EDI]           ; Save [j] to i
- 000002A9  8F 06	     1	    pop [ESI]           ; Save [i] to j
- 000002AB  66| 9D	     1	    popf
- 000002AD  5F		     1	    pop EDI
- 000002AE  5E		     1	    pop ESI
- 000002AF  8B C3		        mov EAX, EBX        ; return i + 1
+ 000002CC  56		     1	    push ESI
+ 000002CD  57		     1	    push EDI
+ 000002CE  66| 9C	     1	    pushf
+ 000002D0  51		     2	    push ECX
+ 000002D1  66| 9C	     2	    pushf
+ 000002D3  8B 75 10	     2	    mov ESI, [EBP + 16]
+ 000002D6  8B CB	     2	    mov ECX, EBX
+ 000002D8  83 F9 00	     2	    cmp ECX, 0
+ 000002DB  74 05	     2	    jz ??0009
+ 000002DD		     2	    ??0008:
+ 000002DD  83 C6 04	     2	        add ESI, sizeof DWORD
+ 000002E0  E2 FB	     2	        loop ??0008
+ 000002E2		     2	    ??0009:
+ 000002E2  66| 9D	     2	    popf
+ 000002E4  59		     2	    pop ECX
+ 000002E5  FF 36	     1	    push [ESI]          ; Get value from i
+ 000002E7  8B FE	     1	    mov EDI, ESI        ; Save pointer to this index
+ 000002E9  51		     2	    push ECX
+ 000002EA  66| 9C	     2	    pushf
+ 000002EC  8B 75 10	     2	    mov ESI, [EBP + 16]
+ 000002EF  8B 4D 08	     2	    mov ECX, [EBP + 8]
+ 000002F2  83 F9 00	     2	    cmp ECX, 0
+ 000002F5  74 05	     2	    jz ??000B
+ 000002F7		     2	    ??000A:
+ 000002F7  83 C6 04	     2	        add ESI, sizeof DWORD
+ 000002FA  E2 FB	     2	        loop ??000A
+ 000002FC		     2	    ??000B:
+ 000002FC  66| 9D	     2	    popf
+ 000002FE  59		     2	    pop ECX
+ 000002FF  FF 36	     1	    push [ESI]          ; Get value from j
+ 00000301  8F 07	     1	    pop [EDI]           ; Save [j] to i
+ 00000303  8F 06	     1	    pop [ESI]           ; Save [i] to j
+ 00000305  66| 9D	     1	    popf
+ 00000307  5F		     1	    pop EDI
+ 00000308  5E		     1	    pop ESI
+ 00000309  8B C3		        mov EAX, EBX        ; return i + 1
 
- 000002B1  66| 9D		    popf
- 000002B3  5F			    pop EDI
- 000002B4  59			    pop ECX
- 000002B5  5B			    pop EBX
- 000002B6  5E			    pop ESI
- 000002B7  5D			    pop EBP
- 000002B8  C2 000C		    ret 12
- 000002BB			qsPartition ENDP
+ 0000030B  66| 9D		    popf
+ 0000030D  5F			    pop EDI
+ 0000030E  59			    pop ECX
+ 0000030F  5B			    pop EBX
+ 00000310  5E			    pop ESI
+				    ;pop EBP
+ 00000311  C3			    ret
+ 00000312			qsPartition ENDP
 
 				END main
-Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 22:29:26
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    11/27/19 23:36:08
  Arrays and Sorting     (hw4.asm			     Symbols 2 - 1
 
 
@@ -832,7 +874,7 @@ Segments and Groups:
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
 _DATA  . . . . . . . . . . . . .	32 Bit	 0000041B Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000002BB Para	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000312 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -939,31 +981,37 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-arrayFillRandom  . . . . . . . .	P Near	 00000135 _TEXT	Length= 00000034 Public STDCALL
-  topLoop  . . . . . . . . . . .	L Near	 00000147 _TEXT	
-  postLoop . . . . . . . . . . .	L Near	 00000161 _TEXT	
-arrayPrint . . . . . . . . . . .	P Near	 00000169 _TEXT	Length= 00000061 Public STDCALL
-  topLoop  . . . . . . . . . . .	L Near	 0000018D _TEXT	
-  continue . . . . . . . . . . .	L Near	 000001B5 _TEXT	
-arrayQuickSort . . . . . . . . .	P Near	 000001CA _TEXT	Length= 00000038 Public STDCALL
-  postcon  . . . . . . . . . . .	L Near	 000001FA _TEXT	
-getUserInput . . . . . . . . . .	P Near	 00000087 _TEXT	Length= 000000AE Public STDCALL
-  prompt . . . . . . . . . . . .	L Near	 0000008D _TEXT	
-  boundLo  . . . . . . . . . . .	L Near	 000000E9 _TEXT	
-  boundHi  . . . . . . . . . . .	L Near	 0000010A _TEXT	
-  fin  . . . . . . . . . . . . .	L Near	 0000012E _TEXT	
-intro  . . . . . . . . . . . . .	P Near	 0000003B _TEXT	Length= 0000004C Public STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000003B Public STDCALL
+arrayFillRandom  . . . . . . . .	P Near	 00000162 _TEXT	Length= 00000034 Public STDCALL
+  topLoop  . . . . . . . . . . .	L Near	 00000174 _TEXT	
+  postLoop . . . . . . . . . . .	L Near	 0000018E _TEXT	
+arrayPrint . . . . . . . . . . .	P Near	 00000196 _TEXT	Length= 00000061 Public STDCALL
+  topLoop  . . . . . . . . . . .	L Near	 000001BA _TEXT	
+  continue . . . . . . . . . . .	L Near	 000001E2 _TEXT	
+arrayQuickSort . . . . . . . . .	P Near	 000001F7 _TEXT	Length= 0000004D Public STDCALL
+  postcon  . . . . . . . . . . .	L Near	 00000227 _TEXT	
+getUserInput . . . . . . . . . .	P Near	 000000AF _TEXT	Length= 000000B3 Public STDCALL
+  prompt . . . . . . . . . . . .	L Near	 000000B5 _TEXT	
+  boundLo  . . . . . . . . . . .	L Near	 00000111 _TEXT	
+  boundHi  . . . . . . . . . . .	L Near	 00000132 _TEXT	
+  fin  . . . . . . . . . . . . .	L Near	 00000156 _TEXT	
+intro  . . . . . . . . . . . . .	P Near	 00000063 _TEXT	Length= 0000004C Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000063 Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
-qsPartition  . . . . . . . . . .	P Near	 00000202 _TEXT	Length= 000000B9 Public STDCALL
-  ??0000 . . . . . . . . . . . .	L Near	 00000214 _TEXT	
-  ??0001 . . . . . . . . . . . .	L Near	 0000022B _TEXT	
-  sortLoop . . . . . . . . . . .	L Near	 00000236 _TEXT	
-  ??0002 . . . . . . . . . . . .	L Near	 0000024C _TEXT	
-  ??0003 . . . . . . . . . . . .	L Near	 00000260 _TEXT	
-  postLoop . . . . . . . . . . .	L Near	 0000027B _TEXT	
-  ??0004 . . . . . . . . . . . .	L Near	 00000288 _TEXT	
-  ??0005 . . . . . . . . . . . .	L Near	 0000029D _TEXT	
+qsPartition  . . . . . . . . . .	P Near	 00000244 _TEXT	Length= 000000CE Public STDCALL
+  ??0000 . . . . . . . . . . . .	L Near	 00000258 _TEXT	
+  ??0001 . . . . . . . . . . . .	L Near	 0000025D _TEXT	
+  ??0002 . . . . . . . . . . . .	L Near	 00000274 _TEXT	
+  ??0003 . . . . . . . . . . . .	L Near	 00000279 _TEXT	
+  sortLoop . . . . . . . . . . .	L Near	 0000027F _TEXT	
+  ??0004 . . . . . . . . . . . .	L Near	 00000297 _TEXT	
+  ??0005 . . . . . . . . . . . .	L Near	 0000029C _TEXT	
+  ??0006 . . . . . . . . . . . .	L Near	 000002B0 _TEXT	
+  ??0007 . . . . . . . . . . . .	L Near	 000002B5 _TEXT	
+  postLoop . . . . . . . . . . .	L Near	 000002CB _TEXT	
+  ??0008 . . . . . . . . . . . .	L Near	 000002DD _TEXT	
+  ??0009 . . . . . . . . . . . .	L Near	 000002E2 _TEXT	
+  ??000A . . . . . . . . . . . .	L Near	 000002F7 _TEXT	
+  ??000B . . . . . . . . . . . .	L Near	 000002FC _TEXT	
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 
