@@ -353,10 +353,10 @@ arrayQuickSort PROC
 
     postcon:
     ; FOR DEBUG
-    push OFFSET list
-    push arrLength
-    push OFFSET delimiter
-    call arrayPrint
+    ;push OFFSET list
+    ;push arrLength
+    ;push OFFSET delimiter
+    ;call arrayPrint
 
     popf
     pop EBX
