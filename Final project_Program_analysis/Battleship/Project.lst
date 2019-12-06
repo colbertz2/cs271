@@ -1,0 +1,2058 @@
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    12/04/19 20:15:15
+Battleship     (Battleship.asm				     Page 1 - 1
+
+
+				TITLE Battleship     (Battleship.asm)
+
+				; Author: ??????????
+				; Course / Project ID: CS271             Date: 03/03/19
+				; Description: Plays battleship vs computer
+
+				INCLUDE Irvine32.inc
+			      C ; Include file for Irvine32.lib             (Irvine32.inc)
+			      C 
+			      C ;OPTION CASEMAP:NONE		; optional: make identifiers case-sensitive
+			      C 
+			      C INCLUDE SmallWin.inc		; MS-Windows prototypes, structures, and constants
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C INCLUDE VirtualKeys.inc
+			      C ; VirtualKeys.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C 
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				;CONSTANTS
+
+ = 00000019			max = 25
+
+ 00000000			.data
+ 00000000 57 65 6C 63 6F	welcstr		BYTE	"Welcome to Battleship!", 10, 13, 0
+	   6D 65 20 74 6F
+	   20 42 61 74 74
+	   6C 65 73 68 69
+	   70 21 0A 0D 00
+ 00000019 50 6C 65 61 73	seedstr		BYTE	"Please enter a number between 0 and 4,294,967,295 (Bigger Numbers take longer to load)", 10, 13, 0
+	   65 20 65 6E 74
+	   65 72 20 61 20
+	   6E 75 6D 62 65
+	   72 20 62 65 74
+	   77 65 65 6E 20
+	   30 20 61 6E 64
+	   20 34 2C 32 39
+	   34 2C 39 36 37
+	   2C 32 39 35 20
+	   28 42 69 67 67
+	   65 72 20 4E 75
+	   6D 62 65 72 73
+	   20 74 61 6B 65
+	   20 6C 6F 6E 67
+	   65 72 20 74 6F
+	   20 6C 6F 61 64
+	   29 0A 0D 00
+ 00000072 20 00			spcstr		BYTE	" " , 0
+ 00000074 20 20 20 31 20	brdlets		BYTE	"   1   2   3   4   5", 10, 13, 0
+	   20 20 32 20 20
+	   20 33 20 20 20
+	   34 20 20 20 35
+	   0A 0D 00
+
+ 0000008B 50 6C 61 63 65	plc3str		BYTE	"Place your 3 length ship...", 10, 13, 0
+	   20 79 6F 75 72
+	   20 33 20 6C 65
+	   6E 67 74 68 20
+	   73 68 69 70 2E
+	   2E 2E 0A 0D 00
+ 000000A9 50 6C 61 63 65	plc2str		BYTE	"Place your 2 length ship...", 10, 13, 0
+	   20 79 6F 75 72
+	   20 32 20 6C 65
+	   6E 67 74 68 20
+	   73 68 69 70 2E
+	   2E 2E 0A 0D 00
+ 000000C7 50 6C 61 63 65	plc1str		BYTE	"Place your 1 length ship...", 10, 13, 0
+	   20 79 6F 75 72
+	   20 31 20 6C 65
+	   6E 67 74 68 20
+	   73 68 69 70 2E
+	   2E 2E 0A 0D 00
+ 000000E5 48 6F 77 20 64	rotstr		BYTE	"How do you want the ship rotated? [1 = Vertical] [2 = Horizontal]", 10, 13, 0
+	   6F 20 79 6F 75
+	   20 77 61 6E 74
+	   20 74 68 65 20
+	   73 68 69 70 20
+	   72 6F 74 61 74
+	   65 64 3F 20 5B
+	   31 20 3D 20 56
+	   65 72 74 69 63
+	   61 6C 5D 20 5B
+	   32 20 3D 20 48
+	   6F 72 69 7A 6F
+	   6E 74 61 6C 5D
+	   0A 0D 00
+ 00000129 57 68 65 72 65	plcvstr		BYTE	"Where do you want the top of the ship to be?", 10, 13, 0
+	   20 64 6F 20 79
+	   6F 75 20 77 61
+	   6E 74 20 74 68
+	   65 20 74 6F 70
+	   20 6F 66 20 74
+	   68 65 20 73 68
+	   69 70 20 74 6F
+	   20 62 65 3F 0A
+	   0D 00
+ 00000158 57 68 65 72 65	plchstr		BYTE	"Where do you want the left side of the ship to be?", 10, 13, 0
+	   20 64 6F 20 79
+	   6F 75 20 77 61
+	   6E 74 20 74 68
+	   65 20 6C 65 66
+	   74 20 73 69 64
+	   65 20 6F 66 20
+	   74 68 65 20 73
+	   68 69 70 20 74
+	   6F 20 62 65 3F
+	   0A 0D 00
+ 0000018D 43 6F 6C 75 6D	hrzstr		BYTE	"Column (Top Numbers): ", 0
+	   6E 20 28 54 6F
+	   70 20 4E 75 6D
+	   62 65 72 73 29
+	   3A 20 00
+ 000001A4 52 6F 77 20 28	vrtstr		BYTE	"Row (Side Numbers): ", 0
+	   53 69 64 65 20
+	   4E 75 6D 62 65
+	   72 73 29 3A 20
+	   00
+ 000001B9 49 6E 76 61 6C	invstr		BYTE	"Invalid Choice. Please Try Again...", 10, 13, 0
+	   69 64 20 43 68
+	   6F 69 63 65 2E
+	   20 50 6C 65 61
+	   73 65 20 54 72
+	   79 20 41 67 61
+	   69 6E 2E 2E 2E
+	   0A 0D 00
+ 000001DF 49 6E 76 61 6C	shpstr		BYTE	"Invalid Choice. There is already a ship there. Please Try Again...", 10, 13, 0
+	   69 64 20 43 68
+	   6F 69 63 65 2E
+	   20 54 68 65 72
+	   65 20 69 73 20
+	   61 6C 72 65 61
+	   64 79 20 61 20
+	   73 68 69 70 20
+	   74 68 65 72 65
+	   2E 20 50 6C 65
+	   61 73 65 20 54
+	   72 79 20 41 67
+	   61 69 6E 2E 2E
+	   2E 0A 0D 00
+ 00000224 59 6F 75 72 20	brd1str		BYTE	"Your Board:", 10, 13, 0
+	   42 6F 61 72 64
+	   3A 0A 0D 00
+ 00000232 59 6F 75 72 20	brd2str		BYTE	"Your Radar:", 10, 13, 0
+	   52 61 64 61 72
+	   3A 0A 0D 00
+ 00000240 50 6C 65 61 73	askstr		BYTE	"Please Enter a Target Coordinates...", 10, 13, 0
+	   65 20 45 6E 74
+	   65 72 20 61 20
+	   54 61 72 67 65
+	   74 20 43 6F 6F
+	   72 64 69 6E 61
+	   74 65 73 2E 2E
+	   2E 0A 0D 00
+ 00000267 49 6E 76 61 6C	pegstr		BYTE	"Invalid Choice. There is already a peg there. Please Try Again...", 10, 13, 0
+	   69 64 20 43 68
+	   6F 69 63 65 2E
+	   20 54 68 65 72
+	   65 20 69 73 20
+	   61 6C 72 65 61
+	   64 79 20 61 20
+	   70 65 67 20 74
+	   68 65 72 65 2E
+	   20 50 6C 65 61
+	   73 65 20 54 72
+	   79 20 41 67 61
+	   69 6E 2E 2E 2E
+	   0A 0D 00
+ 000002AB 48 49 54 21 0A	hitstr		BYTE	"HIT!", 10, 13, 0
+	   0D 00
+ 000002B2 4D 49 53 53 21	mssstr		BYTE	"MISS!", 10, 13, 0
+	   0A 0D 00
+ 000002BA 54 68 65 20 63	chitstr		BYTE	"The computer HIT you!", 10, 13, 0
+	   6F 6D 70 75 74
+	   65 72 20 48 49
+	   54 20 79 6F 75
+	   21 0A 0D 00
+ 000002D2 54 68 65 20 63	cmssstr		BYTE	"The computer MISSED!", 10, 13, 0
+	   6F 6D 70 75 74
+	   65 72 20 4D 49
+	   53 53 45 44 21
+	   0A 0D 00
+ 000002E9 2D 2D 3D 20 59	winstr		BYTE	"--= You WON against the computer! Outstanding Moves! =--", 10, 13, 0
+	   6F 75 20 57 4F
+	   4E 20 61 67 61
+	   69 6E 73 74 20
+	   74 68 65 20 63
+	   6F 6D 70 75 74
+	   65 72 21 20 4F
+	   75 74 73 74 61
+	   6E 64 69 6E 67
+	   20 4D 6F 76 65
+	   73 21 20 3D 2D
+	   2D 0A 0D 00
+ 00000324 2D 2D 3D 20 59	losestr		BYTE	"--= You LOST against the computer! Better Luck Next Time! =--", 10, 13, 0
+	   6F 75 20 4C 4F
+	   53 54 20 61 67
+	   61 69 6E 73 74
+	   20 74 68 65 20
+	   63 6F 6D 70 75
+	   74 65 72 21 20
+	   42 65 74 74 65
+	   72 20 4C 75 63
+	   6B 20 4E 65 78
+	   74 20 54 69 6D
+	   65 21 20 3D 2D
+	   2D 0A 0D 00
+ 00000364 44 6F 20 79 6F	agnstr		BYTE	"Do you want to play again? [1 = Yes] [2 = No]", 0
+	   75 20 77 61 6E
+	   74 20 74 6F 20
+	   70 6C 61 79 20
+	   61 67 61 69 6E
+	   3F 20 5B 31 20
+	   3D 20 59 65 73
+	   5D 20 5B 32 20
+	   3D 20 4E 6F 5D
+	   00
+ 00000392 4F 62 6A 65 63	objstr		BYTE	"Objectives:", 10, 13, 0
+	   74 69 76 65 73
+	   3A 0A 0D 00
+ 000003A0 5B 00			obrkstr		BYTE	"[" , 0
+ 000003A2 5D 00			cbrkstr		BYTE	"]" , 0
+ 000003A4 58 00			xstr		BYTE	"X", 0
+ 000003A6 4F 00			ostr		BYTE	"O", 0
+ 000003A8 5D 20 2D 20 33	snk3str		BYTE	"] - 3 x 1 sunk ", 0 
+	   20 78 20 31 20
+	   73 75 6E 6B 20
+	   00
+ 000003B8 5D 20 2D 20 32	snk2str		BYTE	"] - 2 x 1 sunk ", 0 
+	   20 78 20 31 20
+	   73 75 6E 6B 20
+	   00
+ 000003C8 5D 20 2D 20 31	snk1str		BYTE	"] - 1 x 1 sunk ", 10, 13, 0 
+	   20 78 20 31 20
+	   73 75 6E 6B 20
+	   0A 0D 00
+
+
+
+ 000003DA 00000001		strnum		DWORD	1
+
+
+ 000003DE  00000019 [		board1		DWORD	max		DUP (?)
+	    00000000
+	   ]
+ 00000442  00000019 [		board2		DWORD	max		DUP (?)
+	    00000000
+	   ]
+
+ 00000000			.code
+
+ 00000000			main PROC
+
+ 00000000  E8 000000E5			call	intro
+
+ 00000005  68 000003DE R		push	OFFSET board1
+ 0000000A  E8 00000121			call	fillboard
+ 0000000F  68 00000442 R		push	OFFSET board2
+ 00000014  E8 00000117			call	fillboard
+					;
+ 00000019  68 00000442 R		push	OFFSET board2
+ 0000001E  68 000003DE R		push	OFFSET board1
+ 00000023  E8 00000123			call	display
+
+ 00000028  68 000003DE R		push	OFFSET board1
+ 0000002D  E8 000002DF			call	plc3ship
+
+ 00000032  68 00000442 R		push	OFFSET board2
+ 00000037  68 000003DE R		push	OFFSET board1
+ 0000003C  E8 0000010A			call	display
+
+ 00000041  68 000003DE R		push	OFFSET board1
+ 00000046  E8 00000411			call	plc2ship
+
+ 0000004B  68 00000442 R		push	OFFSET board2
+ 00000050  68 000003DE R		push	OFFSET board1
+ 00000055  E8 000000F1			call	display
+
+ 0000005A  68 000003DE R		push	OFFSET board1
+ 0000005F  E8 0000058D			call	plc1ship
+					
+ 00000064  68 00000442 R		push	OFFSET board2
+ 00000069  68 000003DE R		push	OFFSET board1
+ 0000006E  E8 000000D8			call	display
+					;TESTING ONLY DELETE LATER __________________________
+					;push	OFFSET board1
+					;call	cplc3ship
+					;push	OFFSET board1
+					;call	cplc2ship
+					;push	OFFSET board1
+					;call	cplc1ship
+					;_____________________________________________________
+					;computer places ship
+ 00000073  68 00000442 R		push	OFFSET board2
+ 00000078  E8 0000061E			call	cplc3ship
+ 0000007D  68 00000442 R		push	OFFSET board2
+ 00000082  E8 000006CD			call	cplc2ship
+ 00000087  68 00000442 R		push	OFFSET board2
+ 0000008C  E8 000007CD			call	cplc1ship
+
+ 00000091				turns:
+ 00000091  68 00000442 R			push	OFFSET board2
+ 00000096  68 000003DE R			push	OFFSET board1
+ 0000009B  E8 000000AB				call	display
+ 000000A0  68 00000442 R			push	OFFSET board2
+ 000000A5  68 000003DE R			push	OFFSET board1
+ 000000AA  E8 0000095A				call	chckbrd
+
+ 000000AF  68 00000442 R			push	OFFSET board2
+ 000000B4  E8 0000080B				call	plyrtrn
+
+ 000000B9  68 00000442 R			push	OFFSET board2
+ 000000BE  68 000003DE R			push	OFFSET board1
+ 000000C3  E8 00000083				call	display
+ 000000C8  68 00000442 R			push	OFFSET board2
+ 000000CD  68 000003DE R			push	OFFSET board1
+ 000000D2  E8 00000932				call	chckbrd
+
+ 000000D7  68 000003DE R			push	OFFSET board1
+ 000000DC  E8 000008B0				call	comptrn
+
+
+ 000000E1  EB AE				jmp		turns
+					
+
+
+					exit	; exit to operating system
+ 000000E3  6A 00	   *	    push   +000000000h
+ 000000E5  E8 00000000 E   *	    call   ExitProcess
+ 000000EA			main ENDP
+
+				;Greets user with title
+ 000000EA			intro		PROC
+					
+ 000000EA  BA 00000000 R		mov		edx, OFFSET welcstr
+ 000000EF  E8 00000000 E		call	WriteString
+ 000000F4  E8 00000000 E		call	Crlf
+ 000000F9				getseed:
+ 000000F9  BA 00000019 R			mov		edx, OFFSET seedstr
+ 000000FE  E8 00000000 E			call	WriteString
+ 00000103  E8 00000000 E			call	ReadDec
+ 00000108  73 0C				jnc		runseed
+ 0000010A  BA 000001B9 R			mov		edx, OFFSET invstr
+ 0000010F  E8 00000000 E			call	WriteString
+ 00000114  EB E3				jmp		getseed
+ 00000116				runseed:
+ 00000116  8B C8				mov		ecx, eax
+ 00000118  41					inc		ecx
+ 00000119					floop:
+ 00000119  B8 00000001					mov		eax, 1
+ 0000011E  E8 00000000 E				call	RandomRange
+ 00000123  E2 F4					loop	floop
+
+ 00000125  E8 00000000 E		call	WaitMsg
+ 0000012A  E8 00000000 E		call	Clrscr
+
+ 0000012F  C3				ret
+
+ 00000130			intro		ENDP
+
+				;start of game, fills board with 0 (empty)
+ 00000130			fillboard	PROC
+ 00000130  55				push	ebp
+ 00000131  8B EC			mov		ebp, esp
+ 00000133  8B 75 08			mov		esi, [ebp + 8]
+					
+
+ 00000136  B9 00000019			mov		ecx, 25
+ 0000013B  B8 00000000			mov		eax, 0
+ 00000140				forloop:
+ 00000140  89 06				mov		[esi], eax
+ 00000142  83 C6 04				add		esi, 4
+ 00000145  E2 F9				loop	forloop
+
+ 00000147  5D				pop		ebp
+ 00000148  C2 0004			ret		4
+ 0000014B			fillboard	ENDP
+ 0000014B			display		Proc
+ 0000014B  55				push	ebp
+ 0000014C  8B EC			mov		ebp, esp	
+ 0000014E  8B 75 08			mov		esi, [ebp + 8]	;player board
+ 00000151  8B 7D 0C			mov		edi, [ebp + 12] ;comp board
+
+ 00000154  E8 00000000 E		call	Clrscr
+					;Displaying Computer's Board/Player's Radar
+ 00000159  BA 00000232 R		mov		edx, OFFSET brd2str
+ 0000015E  E8 00000000 E		call	WriteString
+
+ 00000163  BA 00000074 R		mov		edx, OFFSET brdlets
+ 00000168  E8 00000000 E		call	WriteString
+
+ 0000016D  C7 05 000003DA R		mov		strnum, 1
+	   00000001
+ 00000177  B9 00000019			mov		ecx, 25
+ 0000017C  B8 00000000			mov		eax, 0
+ 00000181  BB 00000000			mov		ebx, 0
+ 00000186  BA 00000072 R		mov		edx, OFFSET spcstr
+
+ 0000018B  A1 000003DA R		mov		eax, strnum
+ 00000190  E8 00000000 E		call	WriteDec
+ 00000195  E8 00000000 E		call	WriteString
+ 0000019A  FF 05 000003DA R		inc		strnum
+
+ 000001A0				forloop2:
+ 000001A0  BA 000003A0 R			mov		edx, OFFSET obrkstr
+ 000001A5  E8 00000000 E			call	WriteString
+
+ 000001AA  8B 07				mov		eax, [edi]
+
+ 000001AC  83 F8 00				cmp		eax, 0
+ 000001AF  74 0A				JE		nothing2
+ 000001B1  83 F8 04				cmp		eax, 4
+ 000001B4  74 1D				JE		miss2
+ 000001B6  83 F8 05				cmp		eax, 5
+ 000001B9  74 0C				JE		hit2
+ 000001BB					nothing2:
+ 000001BB  BA 00000072 R				mov		edx, OFFSET spcstr
+ 000001C0  E8 00000000 E				call	WriteString
+ 000001C5  EB 16					jmp		doneprinting2
+ 000001C7					hit2:
+ 000001C7  BA 000003A4 R				mov		edx, OFFSET xstr
+ 000001CC  E8 00000000 E				call	WriteString
+ 000001D1  EB 0A					jmp		doneprinting2
+ 000001D3					miss2:
+ 000001D3  BA 000003A6 R				mov		edx, OFFSET ostr
+ 000001D8  E8 00000000 E				call	WriteString
+ 000001DD					doneprinting2:
+ 000001DD  BA 000003A2 R				mov		edx, OFFSET cbrkstr
+ 000001E2  E8 00000000 E				call	WriteString
+ 000001E7  BA 00000072 R				mov		edx, OFFSET spcstr
+ 000001EC  E8 00000000 E				call	WriteString
+ 000001F1  83 C7 04					add		edi, 4
+ 000001F4  43						inc		ebx
+
+ 000001F5  83 FB 05					cmp		ebx, 5
+ 000001F8  7C 2D					JL		nonewline2
+ 000001FA  E8 00000000 E				call	Crlf
+ 000001FF  83 3D 000003DA R				cmp		strnum, 6
+	   06
+ 00000206  74 1A					JE		skp2
+ 00000208  A1 000003DA R				mov		eax, strnum
+ 0000020D  E8 00000000 E				call	WriteDec
+ 00000212  BA 00000072 R				mov		edx, OFFSET spcstr
+ 00000217  E8 00000000 E				call	WriteString
+ 0000021C  FF 05 000003DA R				inc		strnum
+ 00000222						skp2:
+ 00000222  BB 00000000						mov		ebx, 0
+ 00000227						nonewline2:
+ 00000227  49							dec		ecx
+ 00000228  83 F9 00						cmp		ecx, 0
+ 0000022B  74 05						JE		leaveloop2
+ 0000022D  E9 FFFFFF6E						jmp		forloop2
+ 00000232						leaveloop2:
+
+					;Displaying Player's Board
+ 00000232  BA 00000224 R		mov		edx, OFFSET brd1str
+ 00000237  E8 00000000 E		call	WriteString
+
+ 0000023C  BA 00000074 R		mov		edx, OFFSET brdlets
+ 00000241  E8 00000000 E		call	WriteString
+
+ 00000246  C7 05 000003DA R		mov		strnum, 1
+	   00000001
+ 00000250  B9 00000019			mov		ecx, 25
+ 00000255  B8 00000000			mov		eax, 0
+ 0000025A  BB 00000000			mov		ebx, 0
+ 0000025F  BA 00000072 R		mov		edx, OFFSET spcstr
+
+ 00000264  A1 000003DA R		mov		eax, strnum
+ 00000269  E8 00000000 E		call	WriteDec
+ 0000026E  E8 00000000 E		call	WriteString
+ 00000273  FF 05 000003DA R		inc		strnum
+
+ 00000279				forloop1:
+ 00000279  BA 000003A0 R		mov		edx, OFFSET obrkstr
+ 0000027E  E8 00000000 E			call	WriteString
+
+ 00000283  8B 06				mov		eax, [esi]
+
+ 00000285  83 F8 00				cmp		eax, 0
+ 00000288  74 11				JE		nothing1
+ 0000028A  83 F8 04				cmp		eax, 4
+ 0000028D  74 24				JE		miss1
+ 0000028F  83 F8 05				cmp		eax, 5
+ 00000292  74 13				JE		hit1
+ 00000294					shipthere:
+ 00000294  E8 00000000 E				call	WriteDec
+ 00000299  EB 22					jmp		doneprinting1
+ 0000029B					nothing1:
+ 0000029B  BA 00000072 R				mov		edx, OFFSET spcstr
+ 000002A0  E8 00000000 E				call	WriteString
+ 000002A5  EB 16					jmp		doneprinting1
+ 000002A7					hit1:
+ 000002A7  BA 000003A4 R				mov		edx, OFFSET xstr
+ 000002AC  E8 00000000 E				call	WriteString
+ 000002B1  EB 0A					jmp		doneprinting1
+ 000002B3					miss1:
+ 000002B3  BA 000003A6 R				mov		edx, OFFSET ostr
+ 000002B8  E8 00000000 E				call	WriteString
+ 000002BD					doneprinting1:
+ 000002BD  BA 000003A2 R				mov		edx, OFFSET cbrkstr
+ 000002C2  E8 00000000 E				call	WriteString
+ 000002C7  BA 00000072 R				mov		edx, OFFSET spcstr
+ 000002CC  E8 00000000 E				call	WriteString
+
+ 000002D1  83 C6 04					add		esi, 4
+ 000002D4  43						inc		ebx
+ 000002D5  83 FB 05					cmp		ebx, 5
+ 000002D8  7C 28					JL		nonewline1
+ 000002DA  E8 00000000 E				call	Crlf
+ 000002DF  83 3D 000003DA R				cmp		strnum, 6
+	   06
+ 000002E6  74 15					JE		skp1
+ 000002E8  A1 000003DA R				mov		eax, strnum
+ 000002ED  E8 00000000 E				call	WriteDec
+ 000002F2  E8 00000000 E				call	WriteString
+ 000002F7  FF 05 000003DA R				inc		strnum
+ 000002FD						skp1:
+ 000002FD  BB 00000000						mov		ebx, 0
+
+ 00000302						nonewline1:
+ 00000302  49							dec		ecx
+ 00000303  83 F9 00						cmp		ecx, 0
+ 00000306  74 05						JE		leaveloop1
+ 00000308  E9 FFFFFF6C						jmp		forloop1
+ 0000030D						leaveloop1:
+
+					;Printing the Objectives
+					;mov		edx, OFFSET objstr
+					;call	WriteString
+					;mov		edx, OFFSET obrkstr
+					;call	WriteString
+					;mov		edx, OFFSET spcstr
+					;call	WriteString
+					;mov		edx, OFFSET snk3str
+					;call	WriteString
+					;mov		edx, OFFSET obrkstr
+					;call	WriteString
+					;mov		edx, OFFSET spcstr
+					;call	WriteString
+					;mov		edx, OFFSET snk2str
+					;call	WriteString
+					;mov		edx, OFFSET obrkstr
+					;call	WriteString
+					;mov		edx, OFFSET spcstr
+					;call	WriteString
+					;mov		edx, OFFSET snk1str
+					;call	WriteString
+					;call	Crlf
+
+ 0000030D  5D				pop		ebp
+ 0000030E  C2 0004			ret		4
+ 00000311			display		ENDP
+ 00000311			plc3ship		PROC
+ 00000311  55				push	ebp
+ 00000312  8B EC			mov		ebp, esp
+ 00000314  8B 75 08			mov		esi, [ebp + 8]
+
+ 00000317  BA 0000008B R		mov		edx, OFFSET plc3str
+ 0000031C  E8 00000000 E		call	WriteString
+ 00000321				ask:
+ 00000321  BA 000000E5 R			mov		edx, OFFSET rotstr
+ 00000326  E8 00000000 E			call	WriteString
+ 0000032B  E8 00000000 E			call	ReadInt
+ 00000330  83 F8 01				cmp		eax, 1
+ 00000333  74 0F				JE		vertical
+ 00000335  83 F8 02				cmp		eax, 2
+ 00000338  0F 84 0000008A			JE		horizontal
+ 0000033E  0F 85 00000105			JNE		invalid
+
+ 00000344				vertical:
+ 00000344  BA 00000129 R			mov		edx, OFFSET plcvstr
+ 00000349  E8 00000000 E			call	WriteString 
+ 0000034E					askvh:
+ 0000034E  BA 0000018D R				mov		edx, OFFSET hrzstr
+ 00000353  E8 00000000 E				call	WriteString
+ 00000358  E8 00000000 E				call	ReadInt
+ 0000035D  8B D8					mov		ebx, eax
+ 0000035F  83 F8 05					cmp		eax, 5
+ 00000362  7F 07					JG		invalidvh
+ 00000364  83 F8 00					cmp		eax, 0
+ 00000367  7C 02					JL		invalidvh
+ 00000369  7F 0C					JG		askvv
+ 0000036B						invalidvh:
+ 0000036B  BA 000001B9 R					mov		edx, OFFSET invstr
+ 00000370  E8 00000000 E					call	WriteString
+ 00000375  EB CD						jmp		vertical
+ 00000377					askvv:
+ 00000377  BA 000001A4 R				mov		edx, OFFSET vrtstr
+ 0000037C  E8 00000000 E				call	WriteString
+ 00000381  E8 00000000 E				call	ReadInt
+ 00000386  83 F8 03					cmp		eax, 3
+ 00000389  7F 07					JG		invalidvv
+ 0000038B  83 F8 00					cmp		eax, 0
+ 0000038E  7C 02					JL		invalidvv
+ 00000390  7F 0C					JG		place3shipv
+ 00000392						invalidvv:
+ 00000392  BA 000001B9 R					mov		edx, OFFSET invstr
+ 00000397  E8 00000000 E					call	WriteString
+ 0000039C  EB A6						jmp		vertical
+ 0000039E					place3shipv: ;repetative
+								
+								
+								;(v - 1 * 5) + h h = ebx v = eax
+ 0000039E  8B C8						mov		ecx, eax
+ 000003A0  B8 00000005						mov		eax, 5
+						
+ 000003A5  49							dec		ecx
+ 000003A6  F7 E1						mul		ecx
+ 000003A8  03 C3						add		eax, ebx
+
+								;puts ship on array at eax
+ 000003AA  48							dec		eax
+ 000003AB  8B C8						mov		ecx, eax
+ 000003AD							findSpotv:
+ 000003AD  83 C6 04							add		esi, 4
+ 000003B0  E2 FB							loop	findSpotv
+ 000003B2  B9 00000003						mov		ecx, 3
+ 000003B7  BA 00000003						mov		edx, 3
+ 000003BC							dropshipv:
+ 000003BC  89 16							mov		[esi], edx
+ 000003BE  83 C6 14							add		esi, 20
+ 000003C1  E2 F9							loop	dropshipv
+ 000003C3  E9 00000090					jmp		exitfnc
+						
+ 000003C8				horizontal:
+ 000003C8  BA 00000158 R			mov		edx, OFFSET plchstr
+ 000003CD  E8 00000000 E			call	WriteString 
+ 000003D2					askhh:
+ 000003D2  BA 0000018D R				mov		edx, OFFSET hrzstr
+ 000003D7  E8 00000000 E				call	WriteString
+ 000003DC  E8 00000000 E				call	ReadInt
+ 000003E1  83 F8 03					cmp		eax, 3
+ 000003E4  7F 07					JG		invalidhh
+ 000003E6  83 F8 00					cmp		eax, 0
+ 000003E9  7C 02					JL		invalidhh
+ 000003EB  7F 0C					JG		askhv
+ 000003ED						invalidhh:
+ 000003ED  BA 000001B9 R					mov		edx, OFFSET invstr
+ 000003F2  E8 00000000 E					call	WriteString
+ 000003F7  EB CF						jmp		horizontal
+ 000003F9					askhv:
+ 000003F9  8B D8					mov		ebx, eax
+ 000003FB  BA 000001A4 R				mov		edx, OFFSET vrtstr
+ 00000400  E8 00000000 E				call	WriteString
+ 00000405  E8 00000000 E				call	ReadInt
+ 0000040A  83 F8 05					cmp		eax, 5
+ 0000040D  7F 07					JG		invalidhv
+ 0000040F  83 F8 00					cmp		eax, 0
+ 00000412  7C 02					JL		invalidhv
+ 00000414  7F 0C					JG		place3shiph
+ 00000416						invalidhv:
+ 00000416  BA 000001B9 R					mov		edx, OFFSET invstr
+ 0000041B  E8 00000000 E					call	WriteString
+ 00000420  EB A6						jmp		horizontal
+ 00000422					place3shiph: 
+							;(v - 1 * 5) + h h = ebx v = eax
+ 00000422  8B C8					mov		ecx, eax
+ 00000424  B8 00000005					mov		eax, 5
+					
+ 00000429  49						dec		ecx
+ 0000042A  F7 E1					mul		ecx
+ 0000042C  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 0000042E  48						dec		eax
+ 0000042F  8B C8					mov		ecx, eax
+ 00000431						findSpoth:
+ 00000431  83 C6 04						add		esi, 4
+ 00000434  E2 FB						loop	findSpoth
+ 00000436  B9 00000003					mov		ecx, 3
+ 0000043B  BA 00000003					mov		edx, 3
+ 00000440						dropshiph:
+ 00000440  89 16						mov		[esi], edx
+ 00000442  83 C6 04						add		esi, 4
+ 00000445  E2 F9						loop	dropshiph
+ 00000447  EB 0F					jmp		exitfnc
+
+
+ 00000449				invalid:
+ 00000449  BA 000001B9 R			mov		edx, OFFSET invstr
+ 0000044E  E8 00000000 E			call	WriteString
+ 00000453  E9 FFFFFEC9				jmp		ask
+					
+						
+ 00000458				exitfnc:
+ 00000458  5D					pop		ebp
+ 00000459  C2 0004				ret		4
+ 0000045C			plc3ship		ENDP
+ 0000045C			plc2ship		PROC
+ 0000045C  55				push	ebp
+ 0000045D  8B EC			mov		ebp, esp
+ 0000045F  8B 75 08			mov		esi, [ebp + 8]
+
+ 00000462  8B C6			mov		eax, esi
+ 00000464  BA 000000A9 R		mov		edx, OFFSET plc2str
+ 00000469  E8 00000000 E		call	WriteString
+ 0000046E  EB 28			jmp		ask
+
+ 00000470				invshp:
+ 00000470  8B F0				mov		esi, eax
+ 00000472  BB 00000002				mov		ebx, 2
+ 00000477  BA 00000000				mov		edx, 0
+ 0000047C  B9 00000019				mov		ecx, 25
+ 00000481					clrbrd:
+ 00000481  39 1E					cmp		[esi], ebx
+ 00000483  75 02					JNE		finishloop
+ 00000485  89 16					mov		[esi], edx
+ 00000487						finishloop:
+ 00000487  83 C6 04						add		esi, 4
+ 0000048A  E2 F5						loop	clrbrd
+ 0000048C  8B F0				mov		esi, eax	
+ 0000048E  BA 000001DF R			mov		edx, OFFSET shpstr
+ 00000493  E8 00000000 E			call	WriteString
+
+ 00000498				ask:
+ 00000498  BA 000000E5 R			mov		edx, OFFSET rotstr
+ 0000049D  E8 00000000 E			call	WriteString
+ 000004A2  E8 00000000 E			call	ReadInt
+ 000004A7  83 F8 01				cmp		eax, 1
+ 000004AA  74 0F				JE		vertical
+ 000004AC  83 F8 02				cmp		eax, 2
+ 000004AF  0F 84 00000099			JE		horizontal
+ 000004B5  0F 85 00000123			JNE		invalid
+
+ 000004BB				vertical:
+ 000004BB  BA 00000129 R			mov		edx, OFFSET plcvstr
+ 000004C0  E8 00000000 E			call	WriteString 
+ 000004C5					askvh:
+ 000004C5  BA 0000018D R				mov		edx, OFFSET hrzstr
+ 000004CA  E8 00000000 E				call	WriteString
+ 000004CF  E8 00000000 E				call	ReadInt
+ 000004D4  83 F8 05					cmp		eax, 5
+ 000004D7  7F 07					JG		invalidvh
+ 000004D9  83 F8 00					cmp		eax, 0
+ 000004DC  7C 02					JL		invalidvh
+ 000004DE  7F 0C					JG		askvv
+ 000004E0						invalidvh:
+ 000004E0  BA 000001B9 R					mov		edx, OFFSET invstr
+ 000004E5  E8 00000000 E					call	WriteString
+ 000004EA  EB CF						jmp		vertical
+
+ 000004EC					askvv:
+ 000004EC  8B D8					mov		ebx, eax
+ 000004EE  BA 000001A4 R				mov		edx, OFFSET vrtstr
+ 000004F3  E8 00000000 E				call	WriteString
+ 000004F8  E8 00000000 E				call	ReadInt
+ 000004FD  83 F8 04					cmp		eax, 4
+ 00000500  7F 07					JG		invalidvv
+ 00000502  83 F8 00					cmp		eax, 0
+ 00000505  7C 02					JL		invalidvv
+ 00000507  7F 0C					JG		place2shipv
+ 00000509						invalidvv:
+ 00000509  BA 000001B9 R					mov		edx, OFFSET invstr
+ 0000050E  E8 00000000 E					call	WriteString
+ 00000513  EB A6						jmp		vertical
+ 00000515					place2shipv: ;repetative
+								;(v - 1 * 5) + h h = ebx v = eax
+ 00000515  8B C8						mov		ecx, eax
+ 00000517  B8 00000005						mov		eax, 5
+						
+ 0000051C  49							dec		ecx
+ 0000051D  F7 E1						mul		ecx
+ 0000051F  03 C3						add		eax, ebx
+
+								;puts ship on array at eax
+ 00000521  48							dec		eax
+ 00000522  8B C8						mov		ecx, eax
+ 00000524  8B C6						mov		eax, esi	;making sure spot in array is kept
+ 00000526							findSpotv:
+ 00000526  83 C6 04							add		esi, 4
+ 00000529  E2 FB							loop	findSpotv
+ 0000052B  B9 00000002						mov		ecx, 2
+ 00000530  BA 00000002						mov		edx, 2
+ 00000535  BB 00000000						mov		ebx, 0
+								
+ 0000053A							dropshipv:
+ 0000053A  39 1E							cmp		[esi], ebx
+ 0000053C  0F 85 FFFFFF2E						JNE		invshp
+ 00000542  89 16							mov		[esi], edx
+ 00000544  83 C6 14							add		esi, 20
+ 00000547  E2 F1							loop	dropshipv
+ 00000549  E9 0000009F					jmp		exitfnc
+						
+ 0000054E				horizontal:
+ 0000054E  BA 00000158 R			mov		edx, OFFSET plchstr
+ 00000553  E8 00000000 E			call	WriteString 
+ 00000558					askhh:
+ 00000558  BA 0000018D R				mov		edx, OFFSET hrzstr
+ 0000055D  E8 00000000 E				call	WriteString
+ 00000562  E8 00000000 E				call	ReadInt
+ 00000567  83 F8 04					cmp		eax, 4
+ 0000056A  7F 07					JG		invalidhh
+ 0000056C  83 F8 00					cmp		eax, 0
+ 0000056F  7C 02					JL		invalidhh
+ 00000571  7F 0C					JG		askhv
+ 00000573						invalidhh:
+ 00000573  BA 000001B9 R					mov		edx, OFFSET invstr
+ 00000578  E8 00000000 E					call	WriteString
+ 0000057D  EB CF						jmp		horizontal
+ 0000057F					askhv:
+ 0000057F  8B D8					mov		ebx, eax
+ 00000581  BA 000001A4 R				mov		edx, OFFSET vrtstr
+ 00000586  E8 00000000 E				call	WriteString
+ 0000058B  E8 00000000 E				call	ReadInt
+ 00000590  83 F8 05					cmp		eax, 5
+ 00000593  7F 07					JG		invalidhv
+ 00000595  83 F8 00					cmp		eax, 0
+ 00000598  7C 02					JL		invalidhv
+ 0000059A  7F 0C					JG		place2shiph
+ 0000059C						invalidhv:
+ 0000059C  BA 000001B9 R					mov		edx, OFFSET invstr
+ 000005A1  E8 00000000 E					call	WriteString
+ 000005A6  EB A6						jmp		horizontal
+ 000005A8					place2shiph: 
+							;(v - 1 * 5) + h h = ebx v = eax
+ 000005A8  8B C8					mov		ecx, eax
+ 000005AA  B8 00000005					mov		eax, 5
+					
+ 000005AF  49						dec		ecx
+ 000005B0  F7 E1					mul		ecx
+ 000005B2  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 000005B4  48						dec		eax
+ 000005B5  8B C8					mov		ecx, eax
+ 000005B7  8B C6					mov		eax, esi	;making sure spot in array is kept
+ 000005B9						findSpoth:
+ 000005B9  83 C6 04						add		esi, 4
+ 000005BC  E2 FB						loop	findSpoth
+ 000005BE  B9 00000002					mov		ecx, 2
+ 000005C3  BA 00000002					mov		edx, 2
+ 000005C8  BB 00000000					mov		ebx, 0
+ 000005CD						dropshiph:
+ 000005CD  39 1E						cmp		[esi], ebx
+ 000005CF  0F 85 FFFFFE9B					JNE		invshp
+ 000005D5  89 16						mov		[esi], edx
+ 000005D7  83 C6 04						add		esi, 4
+ 000005DA  E2 F1						loop	dropshiph
+ 000005DC  EB 0F					jmp		exitfnc
+
+
+ 000005DE				invalid:
+ 000005DE  BA 000001B9 R			mov		edx, OFFSET invstr
+ 000005E3  E8 00000000 E			call	WriteString
+ 000005E8  E9 FFFFFEAB				jmp		ask
+					
+						
+ 000005ED				exitfnc:
+ 000005ED  5D					pop		ebp
+ 000005EE  C2 0004				ret		4
+ 000005F1			plc2ship		ENDP
+ 000005F1			plc1ship		PROC
+ 000005F1  55				push	ebp
+ 000005F2  8B EC			mov		ebp, esp
+ 000005F4  8B 75 08			mov		esi, [ebp + 8]
+
+ 000005F7  8B C6			mov		eax, esi
+ 000005F9  BA 000000C7 R		mov		edx, OFFSET plc1str
+ 000005FE  E8 00000000 E		call	WriteString
+ 00000603  EB 0C			jmp		ask
+
+ 00000605				invshp:
+ 00000605  8B F0				mov		esi, eax
+ 00000607  BA 000001DF R			mov		edx, OFFSET shpstr
+ 0000060C  E8 00000000 E			call	WriteString
+
+ 00000611				ask:
+ 00000611					askhh:
+ 00000611  BA 0000018D R				mov		edx, OFFSET hrzstr
+ 00000616  E8 00000000 E				call	WriteString
+ 0000061B  E8 00000000 E				call	ReadInt
+ 00000620  83 F8 05					cmp		eax, 5
+ 00000623  7F 07					JG		invalidhh
+ 00000625  83 F8 00					cmp		eax, 0
+ 00000628  7C 02					JL		invalidhh
+ 0000062A  7F 0C					JG		askhv
+ 0000062C						invalidhh:
+ 0000062C  BA 000001B9 R					mov		edx, OFFSET invstr
+ 00000631  E8 00000000 E					call	WriteString
+ 00000636  EB D9						jmp		ask
+ 00000638					askhv:
+ 00000638  8B D8					mov		ebx, eax
+ 0000063A  BA 000001A4 R				mov		edx, OFFSET vrtstr
+ 0000063F  E8 00000000 E				call	WriteString
+ 00000644  E8 00000000 E				call	ReadInt
+ 00000649  83 F8 05					cmp		eax, 5
+ 0000064C  7F 07					JG		invalidhv
+ 0000064E  83 F8 00					cmp		eax, 0
+ 00000651  7C 02					JL		invalidhv
+ 00000653  7F 0C					JG		place1shiph
+ 00000655						invalidhv:
+ 00000655  BA 000001B9 R					mov		edx, OFFSET invstr
+ 0000065A  E8 00000000 E					call	WriteString
+ 0000065F  EB B0						jmp		ask
+ 00000661					place1shiph: 
+							;(v - 1 * 5) + h h = ebx v = eax
+ 00000661  8B C8					mov		ecx, eax
+ 00000663  B8 00000005					mov		eax, 5
+					
+ 00000668  49						dec		ecx
+ 00000669  F7 E1					mul		ecx
+ 0000066B  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 0000066D  48						dec		eax
+ 0000066E  8B C8					mov		ecx, eax
+ 00000670  8B C6					mov		eax, esi	;making sure spot in array is kept
+ 00000672						findSpoth:
+ 00000672  83 C6 04						add		esi, 4
+ 00000675  E2 FB						loop	findSpoth
+ 00000677  B9 00000001					mov		ecx, 1
+ 0000067C  BA 00000001					mov		edx, 1
+ 00000681  BB 00000000					mov		ebx, 0
+ 00000686						dropshiph:
+ 00000686  39 1E						cmp		[esi], ebx
+ 00000688  0F 85 FFFFFF77					JNE		invshp
+ 0000068E  89 16						mov		[esi], edx
+ 00000690  83 C6 04						add		esi, 4
+ 00000693  E2 F1						loop	dropshiph
+ 00000695  EB 00					jmp		exitfnc
+					
+ 00000697				exitfnc:
+ 00000697  5D					pop		ebp
+ 00000698  C2 0004				ret		4
+ 0000069B			plc1ship		ENDP
+ 0000069B			cplc3ship		Proc
+ 0000069B  55				push	ebp
+ 0000069C  8B EC			mov		ebp, esp
+ 0000069E  8B 75 08			mov		esi, [ebp + 8]
+
+ 000006A1				ask:
+						;Gen number
+ 000006A1  B8 00000002				mov		eax, 2
+ 000006A6  83 E8 01				sub		eax, 1
+ 000006A9  40					inc		eax
+ 000006AA  E8 00000000 E			call	RandomRange
+ 000006AF  83 C0 01				add		eax, 1
+
+ 000006B2  83 F8 01				cmp		eax, 1
+ 000006B5  74 05				JE		vertical
+ 000006B7  83 F8 02				cmp		eax, 2
+ 000006BA  74 4B				JE		horizontal
+
+ 000006BC				vertical:
+ 000006BC					askvh:
+ 000006BC  B8 00000005					mov		eax, 5
+ 000006C1  83 E8 01					sub		eax, 1
+ 000006C4  40						inc		eax
+ 000006C5  E8 00000000 E				call	RandomRange
+ 000006CA  83 C0 01					add		eax, 1
+ 000006CD  8B D8					mov		ebx, eax
+ 000006CF					askvv:
+ 000006CF  B8 00000003					mov		eax, 3
+ 000006D4  83 E8 01					sub		eax, 1
+ 000006D7  40						inc		eax
+ 000006D8  E8 00000000 E				call	RandomRange
+ 000006DD  83 C0 01					add		eax, 1
+ 000006E0					place3shipv: ;repetative
+								;(v - 1 * 5) + h h = ebx v = eax
+ 000006E0  8B C8						mov		ecx, eax
+ 000006E2  B8 00000005						mov		eax, 5
+						
+ 000006E7  49							dec		ecx
+ 000006E8  F7 E1						mul		ecx
+ 000006EA  03 C3						add		eax, ebx
+
+								;puts ship on array at eax
+ 000006EC  48							dec		eax
+ 000006ED  8B C8						mov		ecx, eax
+ 000006EF							findSpotv:
+ 000006EF  83 C6 04							add		esi, 4
+ 000006F2  E2 FB							loop	findSpotv
+ 000006F4  B9 00000003						mov		ecx, 3
+ 000006F9  BA 00000003						mov		edx, 3
+ 000006FE							dropshipv:
+ 000006FE  89 16							mov		[esi], edx
+ 00000700  83 C6 14							add		esi, 20
+ 00000703  E2 F9							loop	dropshipv
+ 00000705  EB 49					jmp		exitfnc
+						
+ 00000707				horizontal:
+ 00000707					askhh:
+ 00000707  B8 00000003					mov		eax, 3
+ 0000070C  83 E8 01					sub		eax, 1
+ 0000070F  40						inc		eax
+ 00000710  E8 00000000 E				call	RandomRange
+ 00000715  83 C0 01					add		eax, 1
+ 00000718  8B D8					mov		ebx, eax
+ 0000071A					askhv:
+ 0000071A  B8 00000005					mov		eax, 5
+ 0000071F  83 E8 01					sub		eax, 1
+ 00000722  40						inc		eax
+ 00000723  E8 00000000 E				call	RandomRange
+ 00000728  83 C0 01					add		eax, 1
+ 0000072B					place3shiph: 
+							;(v - 1 * 5) + h h = ebx v = eax
+ 0000072B  8B C8					mov		ecx, eax
+ 0000072D  B8 00000005					mov		eax, 5
+					
+ 00000732  49						dec		ecx
+ 00000733  F7 E1					mul		ecx
+ 00000735  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 00000737  48						dec		eax
+ 00000738  8B C8					mov		ecx, eax
+ 0000073A						findSpoth:
+ 0000073A  83 C6 04						add		esi, 4
+ 0000073D  E2 FB						loop	findSpoth
+ 0000073F  B9 00000003					mov		ecx, 3
+ 00000744  BA 00000003					mov		edx, 3
+ 00000749						dropshiph:
+ 00000749  89 16						mov		[esi], edx
+ 0000074B  83 C6 04						add		esi, 4
+ 0000074E  E2 F9						loop	dropshiph
+						
+ 00000750				exitfnc:
+ 00000750  5D					pop		ebp
+ 00000751  C2 0004				ret		4
+ 00000754			cplc3ship		ENDP
+ 00000754			cplc2ship		Proc
+ 00000754  55				push	ebp
+ 00000755  8B EC			mov		ebp, esp
+ 00000757  8B 75 08			mov		esi, [ebp + 8]
+
+ 0000075A  8B C6			mov		eax, esi
+ 0000075C  EB 1E			jmp		ask
+
+ 0000075E				invshp:
+ 0000075E  8B F0				mov		esi, eax
+ 00000760  BB 00000002				mov		ebx, 2
+ 00000765  BA 00000000				mov		edx, 0
+ 0000076A  B9 00000019				mov		ecx, 25
+ 0000076F					clrbrd:
+ 0000076F  39 1E					cmp		[esi], ebx
+ 00000771  75 02					JNE		finishloop
+ 00000773  89 16					mov		[esi], edx
+ 00000775						finishloop:
+ 00000775  83 C6 04						add		esi, 4
+ 00000778  E2 F5						loop	clrbrd
+ 0000077A  8B F0				mov		esi, eax	
+
+ 0000077C				ask:
+ 0000077C  B8 00000002				mov		eax, 2
+ 00000781  83 E8 01				sub		eax, 1
+ 00000784  40					inc		eax
+ 00000785  E8 00000000 E			call	RandomRange
+ 0000078A  83 C0 01				add		eax, 1
+ 0000078D  83 F8 01				cmp		eax, 1
+ 00000790  74 05				JE		vertical
+ 00000792  83 F8 02				cmp		eax, 2
+ 00000795  74 5A				JE		horizontal
+
+ 00000797				vertical:
+ 00000797					askvh:
+ 00000797  B8 00000005					mov		eax, 5
+ 0000079C  83 E8 01					sub		eax, 1
+ 0000079F  40						inc		eax
+ 000007A0  E8 00000000 E				call	RandomRange
+ 000007A5  83 C0 01					add		eax, 1
+ 000007A8  8B D8					mov		ebx, eax
+ 000007AA					askvv:
+ 000007AA  B8 00000004					mov		eax, 4
+ 000007AF  83 E8 01					sub		eax, 1
+ 000007B2  40						inc		eax
+ 000007B3  E8 00000000 E				call	RandomRange
+ 000007B8  83 C0 01					add		eax, 1
+ 000007BB					place2shipv: ;repetative
+								;(v - 1 * 5) + h h = ebx v = eax
+ 000007BB  8B C8						mov		ecx, eax
+ 000007BD  B8 00000005						mov		eax, 5
+						
+ 000007C2  49							dec		ecx
+ 000007C3  F7 E1						mul		ecx
+ 000007C5  03 C3						add		eax, ebx
+
+								;puts ship on array at eax
+ 000007C7  48							dec		eax
+ 000007C8  8B C8						mov		ecx, eax
+ 000007CA  8B C6						mov		eax, esi	;making sure spot in array is kept
+ 000007CC							findSpotv:
+ 000007CC  83 C6 04							add		esi, 4
+ 000007CF  E2 FB							loop	findSpotv
+ 000007D1  B9 00000002						mov		ecx, 2
+ 000007D6  BA 00000002						mov		edx, 2
+ 000007DB  BB 00000000						mov		ebx, 0
+								
+ 000007E0							dropshipv:
+ 000007E0  39 1E							cmp		[esi], ebx
+ 000007E2  0F 85 FFFFFF76						JNE		invshp
+ 000007E8  89 16							mov		[esi], edx
+ 000007EA  83 C6 14							add		esi, 20
+ 000007ED  E2 F1							loop	dropshipv
+ 000007EF  EB 69					jmp		exitfnc
+						
+ 000007F1				horizontal:
+ 000007F1					askhh:
+ 000007F1  B8 00000004					mov		eax, 4
+ 000007F6  83 E8 01					sub		eax, 1
+ 000007F9  40						inc		eax
+ 000007FA  E8 00000000 E				call	RandomRange
+ 000007FF  83 C0 01					add		eax, 1
+ 00000802  8B D8					mov		ebx, eax
+ 00000804					askhv:
+ 00000804  B8 00000005					mov		eax, 5
+ 00000809  83 E8 01					sub		eax, 1
+ 0000080C  40						inc		eax
+ 0000080D  E8 00000000 E				call	RandomRange
+ 00000812  83 C0 01					add		eax, 1
+ 00000815					place2shiph: 
+							;(v - 1 * 5) + h h = ebx v = eax
+ 00000815  8B C8					mov		ecx, eax
+ 00000817  B8 00000005					mov		eax, 5
+					
+ 0000081C  49						dec		ecx
+ 0000081D  F7 E1					mul		ecx
+ 0000081F  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 00000821  48						dec		eax
+ 00000822  8B C8					mov		ecx, eax
+ 00000824  8B C6					mov		eax, esi	;making sure spot in array is kept
+ 00000826						findSpoth:
+ 00000826  83 C6 04						add		esi, 4
+ 00000829  E2 FB						loop	findSpoth
+ 0000082B  B9 00000002					mov		ecx, 2
+ 00000830  BA 00000002					mov		edx, 2
+ 00000835  BB 00000000					mov		ebx, 0
+ 0000083A						dropshiph:
+ 0000083A  39 1E						cmp		[esi], ebx
+ 0000083C  0F 85 FFFFFF1C					JNE		invshp
+ 00000842  89 16						mov		[esi], edx
+ 00000844  83 C6 04						add		esi, 4
+ 00000847  E2 F1						loop	dropshiph
+ 00000849  EB 0F					jmp		exitfnc
+
+
+ 0000084B				invalid:
+ 0000084B  BA 000001B9 R			mov		edx, OFFSET invstr
+ 00000850  E8 00000000 E			call	WriteString
+ 00000855  E9 FFFFFF22				jmp		ask
+					
+						
+ 0000085A				exitfnc:
+ 0000085A  5D					pop		ebp
+ 0000085B  C2 0004				ret		4
+ 0000085E			cplc2ship		ENDP
+ 0000085E			cplc1ship		Proc
+ 0000085E  55				push	ebp
+ 0000085F  8B EC			mov		ebp, esp
+ 00000861  8B 75 08			mov		esi, [ebp + 8]
+
+ 00000864  8B C6			mov		eax, esi
+ 00000866  EB 02			jmp		ask
+
+ 00000868				invshp:
+ 00000868  8B F0				mov		esi, eax
+ 0000086A				ask:
+ 0000086A					askhh:
+ 0000086A  B8 00000005					mov		eax, 5
+ 0000086F  83 E8 01					sub		eax, 1
+ 00000872  40						inc		eax
+ 00000873  E8 00000000 E				call	RandomRange
+ 00000878  83 C0 01					add		eax, 1
+ 0000087B  8B D8					mov		ebx, eax
+ 0000087D					askhv:
+ 0000087D  B8 00000005					mov		eax, 5
+ 00000882  83 E8 01					sub		eax, 1
+ 00000885  40						inc		eax
+ 00000886  E8 00000000 E				call	RandomRange
+ 0000088B  83 C0 01					add		eax, 1
+ 0000088E					place1shiph: 
+							;(v - 1 * 5) + h h = ebx v = eax
+ 0000088E  8B C8					mov		ecx, eax
+ 00000890  B8 00000005					mov		eax, 5
+					
+ 00000895  49						dec		ecx
+ 00000896  F7 E1					mul		ecx
+ 00000898  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 0000089A  48						dec		eax
+ 0000089B  8B C8					mov		ecx, eax
+ 0000089D  8B C6					mov		eax, esi	;making sure spot in array is kept
+ 0000089F						findSpoth:
+ 0000089F  83 C6 04						add		esi, 4
+ 000008A2  E2 FB						loop	findSpoth
+ 000008A4  B9 00000001					mov		ecx, 1
+ 000008A9  BA 00000001					mov		edx, 1
+ 000008AE  BB 00000000					mov		ebx, 0
+ 000008B3						dropshiph:
+ 000008B3  39 1E						cmp		[esi], ebx
+ 000008B5  75 B1						JNE		invshp
+ 000008B7  89 16						mov		[esi], edx
+ 000008B9  83 C6 04						add		esi, 4
+ 000008BC  E2 F5						loop	dropshiph
+ 000008BE  EB 00					jmp		exitfnc
+					
+ 000008C0				exitfnc:
+ 000008C0  5D					pop		ebp
+ 000008C1  C2 0004				ret		4
+ 000008C4			cplc1ship		ENDP
+ 000008C4			plyrtrn		PROC
+ 000008C4  55				push	ebp
+ 000008C5  8B EC			mov		ebp, esp	
+ 000008C7  8B 75 08			mov		esi, [ebp + 8]
+ 000008CA  8B C6			mov		eax, esi
+
+ 000008CC				ask:
+ 000008CC  BA 00000240 R			mov		edx, OFFSET askstr
+ 000008D1  E8 00000000 E			call	WriteString
+ 000008D6  E8 00000000 E			call	Crlf
+ 000008DB  EB 18				jmp		horizontal
+ 000008DD					pegthere:
+ 000008DD  8B F0					mov		esi, eax
+
+ 000008DF  BA 00000267 R				mov		edx, OFFSET pegstr
+ 000008E4  E8 00000000 E				call	WriteString
+
+ 000008E9  EB 0A					jmp		horizontal
+ 000008EB					invalid:
+ 000008EB  BA 000001B9 R				mov		edx, OFFSET invstr
+ 000008F0  E8 00000000 E				call	WriteString
+ 000008F5					horizontal:
+ 000008F5  BA 0000018D R				mov		edx, OFFSET hrzstr
+ 000008FA  E8 00000000 E				call	WriteString
+ 000008FF  E8 00000000 E				call	ReadInt
+ 00000904  83 F8 01					cmp		eax, 1
+ 00000907  7C E2					JL		invalid
+ 00000909  83 F8 05					cmp		eax, 5
+ 0000090C  7F DD					JG		invalid
+ 0000090E  8B D8					mov		ebx, eax
+ 00000910					vertical:	
+ 00000910  BA 000001A4 R				mov		edx, OFFSET vrtstr
+ 00000915  E8 00000000 E				call	WriteString
+ 0000091A  E8 00000000 E				call	ReadInt
+ 0000091F  83 F8 01					cmp		eax, 1
+ 00000922  7C C7					JL		invalid
+ 00000924  83 F8 05					cmp		eax, 5
+ 00000927  7F C2					JG		invalid
+ 00000929					plcpeg:
+							;(v - 1 * 5) + h h = ebx v = eax
+ 00000929  8B C8					mov		ecx, eax
+ 0000092B  B8 00000005					mov		eax, 5
+					
+ 00000930  49						dec		ecx
+ 00000931  F7 E1					mul		ecx
+ 00000933  03 C3					add		eax, ebx
+							
+							;puts ship on array at eax
+ 00000935  48						dec		eax
+ 00000936  8B C8					mov		ecx, eax
+ 00000938  8B C6					mov		eax, esi
+ 0000093A						findSpot:
+ 0000093A  83 C6 04						add		esi, 4
+ 0000093D  E2 FB						loop	findSpot
+ 0000093F  BB 00000003					mov		ebx, 3
+
+							;check if peg is there
+ 00000944  39 1E					cmp		[esi], ebx
+ 00000946  7F 95					JG		pegthere
+
+ 00000948  B9 00000000					mov		ecx, 0
+ 0000094D  B8 00000004					mov		eax, 4 ;miss
+ 00000952  BA 00000005					mov		edx, 5 ;hit
+ 00000957  39 1E					cmp		[esi], ebx
+ 00000959  7F 82					JG		pegthere
+ 0000095B  39 0E					cmp		[esi], ecx
+ 0000095D  7F 18					JG		hit
+ 0000095F						miss:
+ 0000095F  89 06						mov		[esi], eax
+ 00000961  BA 000002B2 R					mov		edx, OFFSET mssstr
+ 00000966  E8 00000000 E					call	Crlf
+ 0000096B  E8 00000000 E					call	WriteString
+ 00000970  E8 00000000 E					call	WaitMsg
+ 00000975  EB 16						jmp		exitfnc
+ 00000977						hit:
+ 00000977  89 16						mov		[esi], edx
+ 00000979  BA 000002AB R					mov		edx, OFFSET hitstr
+ 0000097E  E8 00000000 E					call	Crlf
+ 00000983  E8 00000000 E					call	WriteString
+ 00000988  E8 00000000 E					call	WaitMsg
+ 0000098D				exitfnc:
+ 0000098D  5D					pop		ebp
+ 0000098E  C2 0008				ret		8
+ 00000991			plyrtrn		ENDP
+ 00000991			comptrn		PROC
+ 00000991  55				push	ebp
+ 00000992  8B EC			mov		ebp, esp	
+ 00000994  8B 75 08			mov		esi, [ebp + 8]
+ 00000997  8B C6			mov		eax, esi
+
+ 00000999				ask:
+ 00000999  EB 02				jmp		placepeg
+ 0000099B					pegthere:
+ 0000099B  8B F0					mov		esi, eax
+							
+ 0000099D					placepeg:
+ 0000099D  B8 00000019					mov		eax, 25
+ 000009A2  83 E8 01					sub		eax, 1
+ 000009A5  40						inc		eax
+ 000009A6  E8 00000000 E				call	RandomRange
+ 000009AB  83 C0 01					add		eax, 1
+							
+ 000009AE  8B C8					mov		ecx, eax
+ 000009B0  8B C6					mov		eax, esi
+ 000009B2						findSpot:
+ 000009B2  83 C6 04						add		esi, 4
+ 000009B5  E2 FB						loop	findSpot
+ 000009B7  BB 00000003					mov		ebx, 3
+
+							;check if peg is there
+ 000009BC  39 1E					cmp		[esi], ebx
+ 000009BE  7F DB					JG		pegthere
+
+ 000009C0  B9 00000000					mov		ecx, 0
+ 000009C5  B8 00000004					mov		eax, 4 ;miss
+ 000009CA  BA 00000005					mov		edx, 5 ;hit
+ 000009CF  39 1E					cmp		[esi], ebx
+ 000009D1  7F C8					JG		pegthere
+ 000009D3  39 0E					cmp		[esi], ecx
+ 000009D5  7F 18					JG		hit
+ 000009D7						miss:
+ 000009D7  89 06						mov		[esi], eax
+ 000009D9  BA 000002D2 R					mov		edx, OFFSET cmssstr
+ 000009DE  E8 00000000 E					call	Crlf
+ 000009E3  E8 00000000 E					call	WriteString
+ 000009E8  E8 00000000 E					call	WaitMsg
+ 000009ED  EB 16						jmp		exitfnc
+ 000009EF						hit:
+ 000009EF  89 16						mov		[esi], edx
+ 000009F1  BA 000002BA R					mov		edx, OFFSET chitstr
+ 000009F6  E8 00000000 E					call	Crlf
+ 000009FB  E8 00000000 E					call	WriteString
+ 00000A00  E8 00000000 E					call	WaitMsg
+ 00000A05				exitfnc:
+ 00000A05  5D					pop		ebp
+ 00000A06  C2 0008				ret		8
+ 00000A09			comptrn		ENDP
+ 00000A09			chckbrd		PROC
+ 00000A09  55				push	ebp
+ 00000A0A  8B EC			mov		ebp, esp	
+ 00000A0C  8B 75 08			mov		esi, [ebp + 8] ;player board
+ 00000A0F  8B 7D 0C			mov		edi, [ebp + 12]	;comp board
+					
+ 00000A12  8B C6			mov		eax, esi
+					
+ 00000A14  B9 00000019			mov		ecx, 25
+ 00000A19  BB 00000005			mov		ebx, 5
+ 00000A1E  BA 00000000			mov		edx, 0
+ 00000A23				checkw:
+ 00000A23  39 1E				cmp		[esi], ebx
+ 00000A25  74 02				JE		addhitw
+ 00000A27  EB 06				jmp		loopwin
+ 00000A29					addhitw:
+ 00000A29  42						inc		edx
+ 00000A2A  83 FA 06					cmp		edx, 6		; if 5 hits
+ 00000A2D  74 29					JE		playerwin
+ 00000A2F					loopwin:
+ 00000A2F  83 C6 04					add		esi, 4
+ 00000A32  E2 EF					loop	checkw
+
+
+ 00000A34  B9 00000019			mov		ecx, 25
+ 00000A39  BB 00000005			mov		ebx, 5
+ 00000A3E  BA 00000000			mov		edx, 0
+ 00000A43				checkl:
+ 00000A43  39 1F				cmp		[edi], ebx 
+ 00000A45  74 02				JE		addhitl
+ 00000A47  EB 06				jmp		loopl
+ 00000A49					addhitl:
+ 00000A49  42						inc		edx
+ 00000A4A  83 FA 06					cmp		edx, 6		; if 5 hits
+ 00000A4D  74 09					JE		playerwin
+ 00000A4F					loopl:
+ 00000A4F  83 C7 04					add		edi, 4
+ 00000A52  E2 EF					loop	checkl
+ 00000A54  8B F0			mov		esi, eax
+
+
+ 00000A56  EB 49			jmp		exitfnc
+
+ 00000A58				playerwin:
+ 00000A58  BA 000002E9 R			mov		edx, OFFSET winstr
+ 00000A5D  E8 00000000 E			call	WriteString
+ 00000A62  EB 0C				jmp		playagain
+ 00000A64				playerlose:
+ 00000A64  BA 00000324 R			mov		edx, OFFSET losestr
+ 00000A69  E8 00000000 E			call	WriteString
+ 00000A6E  EB 00				jmp		playagain
+ 00000A70				playagain:
+ 00000A70  BA 00000364 R			mov		edx, OFFSET agnstr
+ 00000A75  E8 00000000 E			call	WriteString
+ 00000A7A  E8 00000000 E			call	ReadInt
+ 00000A7F  83 F8 01				cmp		eax, 1
+ 00000A82  74 0C				JE		newgame
+ 00000A84  83 F8 02				cmp		eax, 2
+ 00000A87  75 0C				JNE		invalid
+ 00000A89				destroygame:
+						invoke	ExitProcess,0 
+ 00000A89  6A 00	   *	    push   +000000000h
+ 00000A8B  E8 00000000 E   *	    call   ExitProcess
+ 00000A90				newgame:
+ 00000A90  E8 FFFFF56B				call	Main
+ 00000A95				invalid:
+ 00000A95  BA 000001B9 R			mov		edx, OFFSET invstr
+ 00000A9A  E8 00000000 E			call	WriteString
+ 00000A9F  EB CF				jmp		playagain
+
+ 00000AA1				exitfnc:
+ 00000AA1  5D					pop		ebp
+ 00000AA2  C2 0008				ret 8
+ 00000AA5			chckbrd		ENDP
+				END main
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    12/04/19 20:15:15
+Battleship     (Battleship.asm				     Symbols 2 - 1
+
+
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+CONSOLE_CURSOR_INFO  . . . . . .	 00000008
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  bVisible . . . . . . . . . . .	 00000004	 DWord
+CONSOLE_SCREEN_BUFFER_INFO . . .	 00000016
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCursorPosition . . . . . . .	 00000004	 DWord
+  wAttributes  . . . . . . . . .	 00000008	 Word
+  srWindow . . . . . . . . . . .	 0000000A	 QWord
+  dwMaximumWindowSize  . . . . .	 00000012	 DWord
+COORD  . . . . . . . . . . . . .	 00000004
+  X  . . . . . . . . . . . . . .	 00000000	 Word
+  Y  . . . . . . . . . . . . . .	 00000002	 Word
+FILETIME . . . . . . . . . . . .	 00000008
+  loDateTime . . . . . . . . . .	 00000000	 DWord
+  hiDateTime . . . . . . . . . .	 00000004	 DWord
+FOCUS_EVENT_RECORD . . . . . . .	 00000004
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+FPU_ENVIRON  . . . . . . . . . .	 0000001C
+  controlWord  . . . . . . . . .	 00000000	 Word
+  statusWord . . . . . . . . . .	 00000004	 Word
+  tagWord  . . . . . . . . . . .	 00000008	 Word
+  instrPointerOffset . . . . . .	 0000000C	 DWord
+  instrPointerSelector . . . . .	 00000010	 DWord
+  operandPointerOffset . . . . .	 00000014	 DWord
+  operandPointerSelector . . . .	 00000018	 Word
+INPUT_RECORD . . . . . . . . . .	 00000014
+  EventType  . . . . . . . . . .	 00000000	 Word
+  Event  . . . . . . . . . . . .	 00000004	 XmmWord
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+KEY_EVENT_RECORD . . . . . . . .	 00000010
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+MENU_EVENT_RECORD  . . . . . . .	 00000004
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+MOUSE_EVENT_RECORD . . . . . . .	 00000010
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+SMALL_RECT . . . . . . . . . . .	 00000008
+  Left . . . . . . . . . . . . .	 00000000	 Word
+  Top  . . . . . . . . . . . . .	 00000002	 Word
+  Right  . . . . . . . . . . . .	 00000004	 Word
+  Bottom . . . . . . . . . . . .	 00000006	 Word
+SYSTEMTIME . . . . . . . . . . .	 00000010
+  wYear  . . . . . . . . . . . .	 00000000	 Word
+  wMonth . . . . . . . . . . . .	 00000002	 Word
+  wDayOfWeek . . . . . . . . . .	 00000004	 Word
+  wDay . . . . . . . . . . . . .	 00000006	 Word
+  wHour  . . . . . . . . . . . .	 00000008	 Word
+  wMinute  . . . . . . . . . . .	 0000000A	 Word
+  wSecond  . . . . . . . . . . .	 0000000C	 Word
+  wMilliseconds  . . . . . . . .	 0000000E	 Word
+WINDOW_BUFFER_SIZE_RECORD  . . .	 00000004
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 000004A6 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000AA5 Para	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+CloseFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CloseHandle  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Clrscr . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateOutputFile . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Crlf . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Delay  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToDosDateTime  . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToSystemTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FlushConsoleInputBuffer  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FormatMessageA . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandLineA  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandTail . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCP . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleScreenBufferInfo . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetDateTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetFileTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetKeyState  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLastError . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMaxXY . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMseconds  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetNumberOfConsoleInputEvents  .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetProcessHeap . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetStdHandle . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetSystemTime  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTickCount . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Gotoxy . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapAlloc  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapCreate . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapDestroy  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapFree . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapSize . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+IsDigit  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+LocalFree  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MessageBoxA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBoxAsk  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBox . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+OpenInputFile  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseDecimal32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseInteger32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+PeekConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Random32 . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+RandomRange  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Randomize  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleA . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadDec  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFile . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFloat  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFromFile . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadHex  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleScreenBufferSize . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTextAttribute  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTitleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleWindowInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetFilePointer . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ShowFPUStack . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Sleep  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+StrLength  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_compare  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_copy . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_length . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_trim . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_ucase  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SystemTimeToFileTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WaitMsg  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBinB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBin . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleA  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputAttribute  . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputCharacterA . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteDec . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFloat . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHexB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHex . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+chckbrd  . . . . . . . . . . . .	P Near	 00000A09 _TEXT	Length= 0000009C Public STDCALL
+  checkw . . . . . . . . . . . .	L Near	 00000A23 _TEXT	
+  addhitw  . . . . . . . . . . .	L Near	 00000A29 _TEXT	
+  loopwin  . . . . . . . . . . .	L Near	 00000A2F _TEXT	
+  checkl . . . . . . . . . . . .	L Near	 00000A43 _TEXT	
+  addhitl  . . . . . . . . . . .	L Near	 00000A49 _TEXT	
+  loopl  . . . . . . . . . . . .	L Near	 00000A4F _TEXT	
+  playerwin  . . . . . . . . . .	L Near	 00000A58 _TEXT	
+  playerlose . . . . . . . . . .	L Near	 00000A64 _TEXT	
+  playagain  . . . . . . . . . .	L Near	 00000A70 _TEXT	
+  destroygame  . . . . . . . . .	L Near	 00000A89 _TEXT	
+  newgame  . . . . . . . . . . .	L Near	 00000A90 _TEXT	
+  invalid  . . . . . . . . . . .	L Near	 00000A95 _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 00000AA1 _TEXT	
+comptrn  . . . . . . . . . . . .	P Near	 00000991 _TEXT	Length= 00000078 Public STDCALL
+  ask  . . . . . . . . . . . . .	L Near	 00000999 _TEXT	
+  pegthere . . . . . . . . . . .	L Near	 0000099B _TEXT	
+  placepeg . . . . . . . . . . .	L Near	 0000099D _TEXT	
+  findSpot . . . . . . . . . . .	L Near	 000009B2 _TEXT	
+  miss . . . . . . . . . . . . .	L Near	 000009D7 _TEXT	
+  hit  . . . . . . . . . . . . .	L Near	 000009EF _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 00000A05 _TEXT	
+cplc1ship  . . . . . . . . . . .	P Near	 0000085E _TEXT	Length= 00000066 Public STDCALL
+  invshp . . . . . . . . . . . .	L Near	 00000868 _TEXT	
+  ask  . . . . . . . . . . . . .	L Near	 0000086A _TEXT	
+  askhh  . . . . . . . . . . . .	L Near	 0000086A _TEXT	
+  askhv  . . . . . . . . . . . .	L Near	 0000087D _TEXT	
+  place1shiph  . . . . . . . . .	L Near	 0000088E _TEXT	
+  findSpoth  . . . . . . . . . .	L Near	 0000089F _TEXT	
+  dropshiph  . . . . . . . . . .	L Near	 000008B3 _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 000008C0 _TEXT	
+cplc2ship  . . . . . . . . . . .	P Near	 00000754 _TEXT	Length= 0000010A Public STDCALL
+  invshp . . . . . . . . . . . .	L Near	 0000075E _TEXT	
+  clrbrd . . . . . . . . . . . .	L Near	 0000076F _TEXT	
+  finishloop . . . . . . . . . .	L Near	 00000775 _TEXT	
+  ask  . . . . . . . . . . . . .	L Near	 0000077C _TEXT	
+  vertical . . . . . . . . . . .	L Near	 00000797 _TEXT	
+  askvh  . . . . . . . . . . . .	L Near	 00000797 _TEXT	
+  askvv  . . . . . . . . . . . .	L Near	 000007AA _TEXT	
+  place2shipv  . . . . . . . . .	L Near	 000007BB _TEXT	
+  findSpotv  . . . . . . . . . .	L Near	 000007CC _TEXT	
+  dropshipv  . . . . . . . . . .	L Near	 000007E0 _TEXT	
+  horizontal . . . . . . . . . .	L Near	 000007F1 _TEXT	
+  askhh  . . . . . . . . . . . .	L Near	 000007F1 _TEXT	
+  askhv  . . . . . . . . . . . .	L Near	 00000804 _TEXT	
+  place2shiph  . . . . . . . . .	L Near	 00000815 _TEXT	
+  findSpoth  . . . . . . . . . .	L Near	 00000826 _TEXT	
+  dropshiph  . . . . . . . . . .	L Near	 0000083A _TEXT	
+  invalid  . . . . . . . . . . .	L Near	 0000084B _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 0000085A _TEXT	
+cplc3ship  . . . . . . . . . . .	P Near	 0000069B _TEXT	Length= 000000B9 Public STDCALL
+  ask  . . . . . . . . . . . . .	L Near	 000006A1 _TEXT	
+  vertical . . . . . . . . . . .	L Near	 000006BC _TEXT	
+  askvh  . . . . . . . . . . . .	L Near	 000006BC _TEXT	
+  askvv  . . . . . . . . . . . .	L Near	 000006CF _TEXT	
+  place3shipv  . . . . . . . . .	L Near	 000006E0 _TEXT	
+  findSpotv  . . . . . . . . . .	L Near	 000006EF _TEXT	
+  dropshipv  . . . . . . . . . .	L Near	 000006FE _TEXT	
+  horizontal . . . . . . . . . .	L Near	 00000707 _TEXT	
+  askhh  . . . . . . . . . . . .	L Near	 00000707 _TEXT	
+  askhv  . . . . . . . . . . . .	L Near	 0000071A _TEXT	
+  place3shiph  . . . . . . . . .	L Near	 0000072B _TEXT	
+  findSpoth  . . . . . . . . . .	L Near	 0000073A _TEXT	
+  dropshiph  . . . . . . . . . .	L Near	 00000749 _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 00000750 _TEXT	
+display  . . . . . . . . . . . .	P Near	 0000014B _TEXT	Length= 000001C6 Public STDCALL
+  forloop2 . . . . . . . . . . .	L Near	 000001A0 _TEXT	
+  nothing2 . . . . . . . . . . .	L Near	 000001BB _TEXT	
+  hit2 . . . . . . . . . . . . .	L Near	 000001C7 _TEXT	
+  miss2  . . . . . . . . . . . .	L Near	 000001D3 _TEXT	
+  doneprinting2  . . . . . . . .	L Near	 000001DD _TEXT	
+  skp2 . . . . . . . . . . . . .	L Near	 00000222 _TEXT	
+  nonewline2 . . . . . . . . . .	L Near	 00000227 _TEXT	
+  leaveloop2 . . . . . . . . . .	L Near	 00000232 _TEXT	
+  forloop1 . . . . . . . . . . .	L Near	 00000279 _TEXT	
+  shipthere  . . . . . . . . . .	L Near	 00000294 _TEXT	
+  nothing1 . . . . . . . . . . .	L Near	 0000029B _TEXT	
+  hit1 . . . . . . . . . . . . .	L Near	 000002A7 _TEXT	
+  miss1  . . . . . . . . . . . .	L Near	 000002B3 _TEXT	
+  doneprinting1  . . . . . . . .	L Near	 000002BD _TEXT	
+  skp1 . . . . . . . . . . . . .	L Near	 000002FD _TEXT	
+  nonewline1 . . . . . . . . . .	L Near	 00000302 _TEXT	
+  leaveloop1 . . . . . . . . . .	L Near	 0000030D _TEXT	
+fillboard  . . . . . . . . . . .	P Near	 00000130 _TEXT	Length= 0000001B Public STDCALL
+  forloop  . . . . . . . . . . .	L Near	 00000140 _TEXT	
+intro  . . . . . . . . . . . . .	P Near	 000000EA _TEXT	Length= 00000046 Public STDCALL
+  getseed  . . . . . . . . . . .	L Near	 000000F9 _TEXT	
+  runseed  . . . . . . . . . . .	L Near	 00000116 _TEXT	
+  floop  . . . . . . . . . . . .	L Near	 00000119 _TEXT	
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 000000EA Public STDCALL
+  turns  . . . . . . . . . . . .	L Near	 00000091 _TEXT	
+plc1ship . . . . . . . . . . . .	P Near	 000005F1 _TEXT	Length= 000000AA Public STDCALL
+  invshp . . . . . . . . . . . .	L Near	 00000605 _TEXT	
+  ask  . . . . . . . . . . . . .	L Near	 00000611 _TEXT	
+  askhh  . . . . . . . . . . . .	L Near	 00000611 _TEXT	
+  invalidhh  . . . . . . . . . .	L Near	 0000062C _TEXT	
+  askhv  . . . . . . . . . . . .	L Near	 00000638 _TEXT	
+  invalidhv  . . . . . . . . . .	L Near	 00000655 _TEXT	
+  place1shiph  . . . . . . . . .	L Near	 00000661 _TEXT	
+  findSpoth  . . . . . . . . . .	L Near	 00000672 _TEXT	
+  dropshiph  . . . . . . . . . .	L Near	 00000686 _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 00000697 _TEXT	
+plc2ship . . . . . . . . . . . .	P Near	 0000045C _TEXT	Length= 00000195 Public STDCALL
+  invshp . . . . . . . . . . . .	L Near	 00000470 _TEXT	
+  clrbrd . . . . . . . . . . . .	L Near	 00000481 _TEXT	
+  finishloop . . . . . . . . . .	L Near	 00000487 _TEXT	
+  ask  . . . . . . . . . . . . .	L Near	 00000498 _TEXT	
+  vertical . . . . . . . . . . .	L Near	 000004BB _TEXT	
+  askvh  . . . . . . . . . . . .	L Near	 000004C5 _TEXT	
+  invalidvh  . . . . . . . . . .	L Near	 000004E0 _TEXT	
+  askvv  . . . . . . . . . . . .	L Near	 000004EC _TEXT	
+  invalidvv  . . . . . . . . . .	L Near	 00000509 _TEXT	
+  place2shipv  . . . . . . . . .	L Near	 00000515 _TEXT	
+  findSpotv  . . . . . . . . . .	L Near	 00000526 _TEXT	
+  dropshipv  . . . . . . . . . .	L Near	 0000053A _TEXT	
+  horizontal . . . . . . . . . .	L Near	 0000054E _TEXT	
+  askhh  . . . . . . . . . . . .	L Near	 00000558 _TEXT	
+  invalidhh  . . . . . . . . . .	L Near	 00000573 _TEXT	
+  askhv  . . . . . . . . . . . .	L Near	 0000057F _TEXT	
+  invalidhv  . . . . . . . . . .	L Near	 0000059C _TEXT	
+  place2shiph  . . . . . . . . .	L Near	 000005A8 _TEXT	
+  findSpoth  . . . . . . . . . .	L Near	 000005B9 _TEXT	
+  dropshiph  . . . . . . . . . .	L Near	 000005CD _TEXT	
+  invalid  . . . . . . . . . . .	L Near	 000005DE _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 000005ED _TEXT	
+plc3ship . . . . . . . . . . . .	P Near	 00000311 _TEXT	Length= 0000014B Public STDCALL
+  ask  . . . . . . . . . . . . .	L Near	 00000321 _TEXT	
+  vertical . . . . . . . . . . .	L Near	 00000344 _TEXT	
+  askvh  . . . . . . . . . . . .	L Near	 0000034E _TEXT	
+  invalidvh  . . . . . . . . . .	L Near	 0000036B _TEXT	
+  askvv  . . . . . . . . . . . .	L Near	 00000377 _TEXT	
+  invalidvv  . . . . . . . . . .	L Near	 00000392 _TEXT	
+  place3shipv  . . . . . . . . .	L Near	 0000039E _TEXT	
+  findSpotv  . . . . . . . . . .	L Near	 000003AD _TEXT	
+  dropshipv  . . . . . . . . . .	L Near	 000003BC _TEXT	
+  horizontal . . . . . . . . . .	L Near	 000003C8 _TEXT	
+  askhh  . . . . . . . . . . . .	L Near	 000003D2 _TEXT	
+  invalidhh  . . . . . . . . . .	L Near	 000003ED _TEXT	
+  askhv  . . . . . . . . . . . .	L Near	 000003F9 _TEXT	
+  invalidhv  . . . . . . . . . .	L Near	 00000416 _TEXT	
+  place3shiph  . . . . . . . . .	L Near	 00000422 _TEXT	
+  findSpoth  . . . . . . . . . .	L Near	 00000431 _TEXT	
+  dropshiph  . . . . . . . . . .	L Near	 00000440 _TEXT	
+  invalid  . . . . . . . . . . .	L Near	 00000449 _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 00000458 _TEXT	
+plyrtrn  . . . . . . . . . . . .	P Near	 000008C4 _TEXT	Length= 000000CD Public STDCALL
+  ask  . . . . . . . . . . . . .	L Near	 000008CC _TEXT	
+  pegthere . . . . . . . . . . .	L Near	 000008DD _TEXT	
+  invalid  . . . . . . . . . . .	L Near	 000008EB _TEXT	
+  horizontal . . . . . . . . . .	L Near	 000008F5 _TEXT	
+  vertical . . . . . . . . . . .	L Near	 00000910 _TEXT	
+  plcpeg . . . . . . . . . . . .	L Near	 00000929 _TEXT	
+  findSpot . . . . . . . . . . .	L Near	 0000093A _TEXT	
+  miss . . . . . . . . . . . . .	L Near	 0000095F _TEXT	
+  hit  . . . . . . . . . . . . .	L Near	 00000977 _TEXT	
+  exitfnc  . . . . . . . . . . .	L Near	 0000098D _TEXT	
+printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+ALT_MASK . . . . . . . . . . . .	Number	 00000003h   
+CAPSLOCK_ON  . . . . . . . . . .	Number	 00000080h   
+CREATE_ALWAYS  . . . . . . . . .	Number	 00000002h   
+CREATE_NEW . . . . . . . . . . .	Number	 00000001h   
+CTRL_MASK  . . . . . . . . . . .	Number	 0000000Ch   
+CreateFile . . . . . . . . . . .	Text   	 CreateFileA
+DO_NOT_SHARE . . . . . . . . . .	Number	 00000000h   
+ENABLE_ECHO_INPUT  . . . . . . .	Number	 00000004h   
+ENABLE_LINE_INPUT  . . . . . . .	Number	 00000002h   
+ENABLE_MOUSE_INPUT . . . . . . .	Number	 00000010h   
+ENABLE_PROCESSED_INPUT . . . . .	Number	 00000001h   
+ENABLE_PROCESSED_OUTPUT  . . . .	Number	 00000001h   
+ENABLE_WINDOW_INPUT  . . . . . .	Number	 00000008h   
+ENABLE_WRAP_AT_EOL_OUTPUT  . . .	Number	 00000002h   
+ENHANCED_KEY . . . . . . . . . .	Number	 00000100h   
+FALSE  . . . . . . . . . . . . .	Number	 00000000h   
+FILE_APPEND_DATA . . . . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_ARCHIVE . . . . .	Number	 00000020h   
+FILE_ATTRIBUTE_COMPRESSED  . . .	Number	 00000800h   
+FILE_ATTRIBUTE_DEVICE  . . . . .	Number	 00000040h   
+FILE_ATTRIBUTE_DIRECTORY . . . .	Number	 00000010h   
+FILE_ATTRIBUTE_ENCRYPTED . . . .	Number	 00004000h   
+FILE_ATTRIBUTE_HIDDEN  . . . . .	Number	 00000002h   
+FILE_ATTRIBUTE_NORMAL  . . . . .	Number	 00000080h   
+FILE_ATTRIBUTE_NOT_CONTENT_INDEXED .	Number	 00002000h   
+FILE_ATTRIBUTE_OFFLINE . . . . .	Number	 00001000h   
+FILE_ATTRIBUTE_READONLY  . . . .	Number	 00000001h   
+FILE_ATTRIBUTE_REPARSE_POINT . .	Number	 00000400h   
+FILE_ATTRIBUTE_SPARSE_FILE . . .	Number	 00000200h   
+FILE_ATTRIBUTE_SYSTEM  . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_TEMPORARY . . . .	Number	 00000100h   
+FILE_BEGIN . . . . . . . . . . .	Number	 00000000h   
+FILE_CURRENT . . . . . . . . . .	Number	 00000001h   
+FILE_DELETE_CHILD  . . . . . . .	Number	 00000040h   
+FILE_END . . . . . . . . . . . .	Number	 00000002h   
+FILE_READ_DATA . . . . . . . . .	Number	 00000001h   
+FILE_SHARE_DELETE  . . . . . . .	Number	 00000004h   
+FILE_SHARE_READ  . . . . . . . .	Number	 00000001h   
+FILE_SHARE_WRITE . . . . . . . .	Number	 00000002h   
+FILE_WRITE_DATA  . . . . . . . .	Number	 00000002h   
+FOCUS_EVENT  . . . . . . . . . .	Number	 00000010h   
+FORMAT_MESSAGE_ALLOCATE_BUFFER .	Number	 00000100h   
+FORMAT_MESSAGE_FROM_SYSTEM . . .	Number	 00001000h   
+FormatMessage  . . . . . . . . .	Text   	 FormatMessageA
+GENERIC_ALL  . . . . . . . . . .	Number	 10000000h   
+GENERIC_EXECUTE  . . . . . . . .	Number	 20000000h   
+GENERIC_READ . . . . . . . . . .	Number	 -80000000h   
+GENERIC_WRITE  . . . . . . . . .	Number	 40000000h   
+GetCommandLine . . . . . . . . .	Text   	 GetCommandLineA
+HANDLE . . . . . . . . . . . . .	Text   	 DWORD
+HEAP_GENERATE_EXCEPTIONS . . . .	Number	 00000004h   
+HEAP_GROWABLE  . . . . . . . . .	Number	 00000002h   
+HEAP_NO_SERIALIZE  . . . . . . .	Number	 00000001h   
+HEAP_REALLOC_IN_PLACE_ONLY . . .	Number	 00000010h   
+HEAP_ZERO_MEMORY . . . . . . . .	Number	 00000008h   
+IDABORT  . . . . . . . . . . . .	Number	 00000003h   
+IDCANCEL . . . . . . . . . . . .	Number	 00000002h   
+IDCLOSE  . . . . . . . . . . . .	Number	 00000008h   
+IDCONTINUE . . . . . . . . . . .	Number	 0000000Bh   
+IDHELP . . . . . . . . . . . . .	Number	 00000009h   
+IDIGNORE . . . . . . . . . . . .	Number	 00000005h   
+IDNO . . . . . . . . . . . . . .	Number	 00000007h   
+IDOK . . . . . . . . . . . . . .	Number	 00000001h   
+IDRETRY  . . . . . . . . . . . .	Number	 00000004h   
+IDTIMEOUT  . . . . . . . . . . .	Number	 00007D00h   
+IDTRYAGAIN . . . . . . . . . . .	Number	 0000000Ah   
+IDYES  . . . . . . . . . . . . .	Number	 00000006h   
+INVALID_HANDLE_VALUE . . . . . .	Number	 -00000001h   
+KBDOWN_FLAG  . . . . . . . . . .	Number	 00000001h   
+KEY_EVENT  . . . . . . . . . . .	Number	 00000001h   
+KEY_MASKS  . . . . . . . . . . .	Number	 0000001Fh   
+LEFT_ALT_PRESSED . . . . . . . .	Number	 00000002h   
+LEFT_CTRL_PRESSED  . . . . . . .	Number	 00000008h   
+MB_ABORTRETRYIGNORE  . . . . . .	Number	 00000002h   
+MB_APPLMODAL . . . . . . . . . .	Number	 00000000h   
+MB_CANCELTRYCONTINUE . . . . . .	Number	 00000006h   
+MB_DEFBUTTON1  . . . . . . . . .	Number	 00000000h   
+MB_DEFBUTTON2  . . . . . . . . .	Number	 00000100h   
+MB_DEFBUTTON3  . . . . . . . . .	Number	 00000200h   
+MB_DEFBUTTON4  . . . . . . . . .	Number	 00000300h   
+MB_HELP  . . . . . . . . . . . .	Number	 00004000h   
+MB_ICONASTERISK  . . . . . . . .	Number	 00000040h   
+MB_ICONERROR . . . . . . . . . .	Number	 00000010h   
+MB_ICONEXCLAMATION . . . . . . .	Number	 00000030h   
+MB_ICONHAND  . . . . . . . . . .	Number	 00000010h   
+MB_ICONINFORMATION . . . . . . .	Number	 00000040h   
+MB_ICONQUESTION  . . . . . . . .	Number	 00000020h   
+MB_ICONSTOP  . . . . . . . . . .	Number	 00000010h   
+MB_ICONWARNING . . . . . . . . .	Number	 00000030h   
+MB_OKCANCEL  . . . . . . . . . .	Number	 00000001h   
+MB_OK  . . . . . . . . . . . . .	Number	 00000000h   
+MB_RETRYCANCEL . . . . . . . . .	Number	 00000005h   
+MB_SYSTEMMODAL . . . . . . . . .	Number	 00001000h   
+MB_TASKMODAL . . . . . . . . . .	Number	 00002000h   
+MB_USERICON  . . . . . . . . . .	Number	 00000080h   
+MB_YESNOCANCEL . . . . . . . . .	Number	 00000003h   
+MB_YESNO . . . . . . . . . . . .	Number	 00000004h   
+MENU_EVENT . . . . . . . . . . .	Number	 00000008h   
+MOUSE_EVENT  . . . . . . . . . .	Number	 00000002h   
+MessageBox . . . . . . . . . . .	Text   	 MessageBoxA
+NULL . . . . . . . . . . . . . .	Number	 00000000h   
+NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
+OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
+OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
+RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h   
+RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
+ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
+ReadConsole  . . . . . . . . . .	Text   	 ReadConsoleA
+SCROLLLOCK_ON  . . . . . . . . .	Number	 00000040h   
+SHIFT_MASK . . . . . . . . . . .	Number	 00000010h   
+SHIFT_PRESSED  . . . . . . . . .	Number	 00000010h   
+STD_ERROR_HANDLE . . . . . . . .	Number	 -0000000Ch   
+STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah   
+STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
+SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
+TAB  . . . . . . . . . . . . . .	Number	 00000009h   
+TRUE . . . . . . . . . . . . . .	Number	 00000001h   
+TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
+VK_11  . . . . . . . . . . . . .	Number	 000000BDh   
+VK_12  . . . . . . . . . . . . .	Number	 000000BBh   
+VK_ADD . . . . . . . . . . . . .	Number	 0000006Bh   
+VK_BACK  . . . . . . . . . . . .	Number	 00000008h   
+VK_CANCEL  . . . . . . . . . . .	Number	 00000003h   
+VK_CAPITAL . . . . . . . . . . .	Number	 00000014h   
+VK_CLEAR . . . . . . . . . . . .	Number	 0000000Ch   
+VK_CONTROL . . . . . . . . . . .	Number	 00000011h   
+VK_DECIMAL . . . . . . . . . . .	Number	 0000006Eh   
+VK_DELETE  . . . . . . . . . . .	Number	 0000002Eh   
+VK_DIVIDE  . . . . . . . . . . .	Number	 0000006Fh   
+VK_DOWN  . . . . . . . . . . . .	Number	 00000028h   
+VK_END . . . . . . . . . . . . .	Number	 00000023h   
+VK_ESCAPE  . . . . . . . . . . .	Number	 0000001Bh   
+VK_EXECUTE . . . . . . . . . . .	Number	 0000002Bh   
+VK_F10 . . . . . . . . . . . . .	Number	 00000079h   
+VK_F11 . . . . . . . . . . . . .	Number	 0000007Ah   
+VK_F12 . . . . . . . . . . . . .	Number	 0000007Bh   
+VK_F13 . . . . . . . . . . . . .	Number	 0000007Ch   
+VK_F14 . . . . . . . . . . . . .	Number	 0000007Dh   
+VK_F15 . . . . . . . . . . . . .	Number	 0000007Eh   
+VK_F16 . . . . . . . . . . . . .	Number	 0000007Fh   
+VK_F17 . . . . . . . . . . . . .	Number	 00000080h   
+VK_F18 . . . . . . . . . . . . .	Number	 00000081h   
+VK_F19 . . . . . . . . . . . . .	Number	 00000082h   
+VK_F1  . . . . . . . . . . . . .	Number	 00000070h   
+VK_F20 . . . . . . . . . . . . .	Number	 00000083h   
+VK_F21 . . . . . . . . . . . . .	Number	 00000084h   
+VK_F22 . . . . . . . . . . . . .	Number	 00000085h   
+VK_F23 . . . . . . . . . . . . .	Number	 00000086h   
+VK_F24 . . . . . . . . . . . . .	Number	 00000087h   
+VK_F2  . . . . . . . . . . . . .	Number	 00000071h   
+VK_F3  . . . . . . . . . . . . .	Number	 00000072h   
+VK_F4  . . . . . . . . . . . . .	Number	 00000073h   
+VK_F5  . . . . . . . . . . . . .	Number	 00000074h   
+VK_F6  . . . . . . . . . . . . .	Number	 00000075h   
+VK_F7  . . . . . . . . . . . . .	Number	 00000076h   
+VK_F8  . . . . . . . . . . . . .	Number	 00000077h   
+VK_F9  . . . . . . . . . . . . .	Number	 00000078h   
+VK_HELP  . . . . . . . . . . . .	Number	 0000002Fh   
+VK_HOME  . . . . . . . . . . . .	Number	 00000024h   
+VK_INSERT  . . . . . . . . . . .	Number	 0000002Dh   
+VK_LBUTTON . . . . . . . . . . .	Number	 00000001h   
+VK_LCONTROL  . . . . . . . . . .	Number	 000000A2h   
+VK_LEFT  . . . . . . . . . . . .	Number	 00000025h   
+VK_LMENU . . . . . . . . . . . .	Number	 000000A4h   
+VK_LSHIFT  . . . . . . . . . . .	Number	 000000A0h   
+VK_MENU  . . . . . . . . . . . .	Number	 00000012h   
+VK_MULTIPLY  . . . . . . . . . .	Number	 0000006Ah   
+VK_NEXT  . . . . . . . . . . . .	Number	 00000022h   
+VK_NUMLOCK . . . . . . . . . . .	Number	 00000090h   
+VK_NUMPAD0 . . . . . . . . . . .	Number	 00000060h   
+VK_NUMPAD1 . . . . . . . . . . .	Number	 00000061h   
+VK_NUMPAD2 . . . . . . . . . . .	Number	 00000062h   
+VK_NUMPAD3 . . . . . . . . . . .	Number	 00000063h   
+VK_NUMPAD4 . . . . . . . . . . .	Number	 00000064h   
+VK_NUMPAD5 . . . . . . . . . . .	Number	 00000065h   
+VK_NUMPAD6 . . . . . . . . . . .	Number	 00000066h   
+VK_NUMPAD7 . . . . . . . . . . .	Number	 00000067h   
+VK_NUMPAD8 . . . . . . . . . . .	Number	 00000068h   
+VK_NUMPAD9 . . . . . . . . . . .	Number	 00000069h   
+VK_PAUSE . . . . . . . . . . . .	Number	 00000013h   
+VK_PRINT . . . . . . . . . . . .	Number	 0000002Ah   
+VK_PRIOR . . . . . . . . . . . .	Number	 00000021h   
+VK_RBUTTON . . . . . . . . . . .	Number	 00000002h   
+VK_RCONTROL  . . . . . . . . . .	Number	 000000A3h   
+VK_RETURN  . . . . . . . . . . .	Number	 0000000Dh   
+VK_RIGHT . . . . . . . . . . . .	Number	 00000027h   
+VK_RMENU . . . . . . . . . . . .	Number	 000000A5h   
+VK_RSHIFT  . . . . . . . . . . .	Number	 000000A1h   
+VK_SCROLL  . . . . . . . . . . .	Number	 00000091h   
+VK_SEPARATER . . . . . . . . . .	Number	 0000006Ch   
+VK_SHIFT . . . . . . . . . . . .	Number	 00000010h   
+VK_SNAPSHOT  . . . . . . . . . .	Number	 0000002Ch   
+VK_SPACE . . . . . . . . . . . .	Number	 00000020h   
+VK_SUBTRACT  . . . . . . . . . .	Number	 0000006Dh   
+VK_TAB . . . . . . . . . . . . .	Number	 00000009h   
+VK_UP  . . . . . . . . . . . . .	Number	 00000026h   
+WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
+WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
+WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+agnstr . . . . . . . . . . . . .	Byte	 00000364 _DATA	
+askstr . . . . . . . . . . . . .	Byte	 00000240 _DATA	
+black  . . . . . . . . . . . . .	Number	 00000000h   
+blue . . . . . . . . . . . . . .	Number	 00000001h   
+board1 . . . . . . . . . . . . .	DWord	 000003DE _DATA	
+board2 . . . . . . . . . . . . .	DWord	 00000442 _DATA	
+brd1str  . . . . . . . . . . . .	Byte	 00000224 _DATA	
+brd2str  . . . . . . . . . . . .	Byte	 00000232 _DATA	
+brdlets  . . . . . . . . . . . .	Byte	 00000074 _DATA	
+brown  . . . . . . . . . . . . .	Number	 00000006h   
+cbrkstr  . . . . . . . . . . . .	Byte	 000003A2 _DATA	
+chitstr  . . . . . . . . . . . .	Byte	 000002BA _DATA	
+cmssstr  . . . . . . . . . . . .	Byte	 000002D2 _DATA	
+cyan . . . . . . . . . . . . . .	Number	 00000003h   
+exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
+gray . . . . . . . . . . . . . .	Number	 00000008h   
+green  . . . . . . . . . . . . .	Number	 00000002h   
+hitstr . . . . . . . . . . . . .	Byte	 000002AB _DATA	
+hrzstr . . . . . . . . . . . . .	Byte	 0000018D _DATA	
+invstr . . . . . . . . . . . . .	Byte	 000001B9 _DATA	
+lightBlue  . . . . . . . . . . .	Number	 00000009h   
+lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
+lightGray  . . . . . . . . . . .	Number	 00000007h   
+lightGreen . . . . . . . . . . .	Number	 0000000Ah   
+lightMagenta . . . . . . . . . .	Number	 0000000Dh   
+lightRed . . . . . . . . . . . .	Number	 0000000Ch   
+losestr  . . . . . . . . . . . .	Byte	 00000324 _DATA	
+magenta  . . . . . . . . . . . .	Number	 00000005h   
+max  . . . . . . . . . . . . . .	Number	 00000019h   
+mssstr . . . . . . . . . . . . .	Byte	 000002B2 _DATA	
+objstr . . . . . . . . . . . . .	Byte	 00000392 _DATA	
+obrkstr  . . . . . . . . . . . .	Byte	 000003A0 _DATA	
+ostr . . . . . . . . . . . . . .	Byte	 000003A6 _DATA	
+pegstr . . . . . . . . . . . . .	Byte	 00000267 _DATA	
+plc1str  . . . . . . . . . . . .	Byte	 000000C7 _DATA	
+plc2str  . . . . . . . . . . . .	Byte	 000000A9 _DATA	
+plc3str  . . . . . . . . . . . .	Byte	 0000008B _DATA	
+plchstr  . . . . . . . . . . . .	Byte	 00000158 _DATA	
+plcvstr  . . . . . . . . . . . .	Byte	 00000129 _DATA	
+red  . . . . . . . . . . . . . .	Number	 00000004h   
+rotstr . . . . . . . . . . . . .	Byte	 000000E5 _DATA	
+seedstr  . . . . . . . . . . . .	Byte	 00000019 _DATA	
+shpstr . . . . . . . . . . . . .	Byte	 000001DF _DATA	
+snk1str  . . . . . . . . . . . .	Byte	 000003C8 _DATA	
+snk2str  . . . . . . . . . . . .	Byte	 000003B8 _DATA	
+snk3str  . . . . . . . . . . . .	Byte	 000003A8 _DATA	
+spcstr . . . . . . . . . . . . .	Byte	 00000072 _DATA	
+strnum . . . . . . . . . . . . .	DWord	 000003DA _DATA	
+vrtstr . . . . . . . . . . . . .	Byte	 000001A4 _DATA	
+welcstr  . . . . . . . . . . . .	Byte	 00000000 _DATA	
+white  . . . . . . . . . . . . .	Number	 0000000Fh   
+winstr . . . . . . . . . . . . .	Byte	 000002E9 _DATA	
+wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
+xstr . . . . . . . . . . . . . .	Byte	 000003A4 _DATA	
+yellow . . . . . . . . . . . . .	Number	 0000000Eh   
+
+	   0 Warnings
+	   0 Errors

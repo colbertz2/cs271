@@ -1,0 +1,1148 @@
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    12/04/19 20:13:28
+SnakeXenia.as						     Page 1 - 1
+
+
+				TITLE SnakeXenia.asm
+
+				; Link to github code: https://github.com/itzzhammy/Snake_Xenia_Game_Assembely_Language
+				; Snake game created in MASM x86. 
+				; Where the primary obstacle is phrased as Apple by the symbol “@”. 
+
+				; Registers used in the program: 	
+					;1)	eax, esi, edx, ebx, ecx, edx 
+					;2)	ax, bx, al , dl, dh, ah 
+					
+				; Classification of registers:
+					;1)	EAX, AX, AH, AL: They are used as the accumulator registers. They are used for input and output. They also carry out arithmetic instructions. 
+					;2)	EBX, BX: They are used as the base registers. They are the basic pointer address to access memory. 
+					;3)	ECX: They are used as the Counter registers. They are used as the loop counter for shifting values. 
+					;4)	EDX, DH and DL: They are used as the Data registers. Used to store data and arithmetic instructions.
+					;5)	ESI: It is used as memory array addressing and setting out values to the pointer memory address
+					
+				; Procedures:
+					;1)	Main Procedure
+					;2)	EatApple (obstacle)
+					;3)	AddNodes 
+					;4)	Configure
+					;5)	CrashSnake
+					;6)	GameSpeed
+					
+				; Problems with game:
+					;1) Speed function does not work properly as it works after 11th apple is eaten
+					;2) When running snake to the obstacle it leaves the shadow of the previous snake movement
+					;3) Too much time delay with the keyboard
+					;4) Should use more delay functions
+					;5) Should use delete function to clear out the shadow of the previous movement (only happens sometimes)
+
+				INCLUDE Irvine32.inc
+			      C ; Include file for Irvine32.lib             (Irvine32.inc)
+			      C 
+			      C ;OPTION CASEMAP:NONE		; optional: make identifiers case-sensitive
+			      C 
+			      C INCLUDE SmallWin.inc		; MS-Windows prototypes, structures, and constants
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C INCLUDE VirtualKeys.inc
+			      C ; VirtualKeys.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C 
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+
+ 00000000			.data
+ 00000000 2A 2A 2A 2A 2A		String1		BYTE "*********WELCOME TO SNAKE XENIA **********",0
+	   2A 2A 2A 2A 57
+	   45 4C 43 4F 4D
+	   45 20 54 4F 20
+	   53 4E 41 4B 45
+	   20 58 45 4E 49
+	   41 20 2A 2A 2A
+	   2A 2A 2A 2A 2A
+	   2A 2A 00
+ 0000002B 59 6F 75 72 20		String2		BYTE "Your Score is: ",0				   	
+	   53 63 6F 72 65
+	   20 69 73 3A 20
+	   00
+ 0000003B 47 41 4D 45 20		String3		BYTE "GAME OVER! Play Again?(Y/N)",0						
+	   4F 56 45 52 21
+	   20 50 6C 61 79
+	   20 41 67 61 69
+	   6E 3F 28 59 2F
+	   4E 29 00
+ 00000057 47 61 6D 65 20		String4		BYTE "Game speed is :",0  					
+	   73 70 65 65 64
+	   20 69 73 20 3A
+	   00
+ 00000067 00				x_head 		BYTE ?								; Variable that holds the "x" of the head of the snake.
+ 00000068 00				y_head 		BYTE ?								; Variable that holds the "y" of the head of the snake.
+ 00000069 02				head 		BYTE 2					
+ 0000006A 23				node 		BYTE "#"							
+ 0000006B 00				x_apple		BYTE ?								; Variable that holds the "x" of the apple.
+ 0000006C 00				y_apple		BYTE ?								; Variable that holds the "y" of the apple.
+ 0000006D 00				appleeaten	BYTE 0								; Apple eaten or not?
+ 0000006E 00				direction 	BYTE 0  							
+ 0000006F 00				olddirection 	BYTE 0								
+ 00000070 B1 B1 B1 B1 B1		bricks1 	BYTE "±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±",0
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 B1 B1 B1 B1
+	   B1 00
+ 000000A4 B1 09 09 09 09		bricks2 	BYTE "±						 	±",0
+	   09 09 20 09 B1
+	   00
+ 000000AF 40				apple		BYTE "@"							; Character for apple.
+ 000000B0 00				x_tail		BYTE ?								; Variable that holds the "x" of the tail of the snake. 
+ 000000B1 00				y_tail		byte ?								; Variable that holds the "x" of the tail of the snake. 
+ 000000B2  000002DF [			Nodes_X		BYTE 735 DUP(0)	
+	    00
+	   ]
+ 00000391  000002DF [			Nodes_Y		BYTE 735 DUP(0)	
+	    00
+	   ]
+ 00000670 00000000			NumOfNodes	DWORD 0								; The number of nodes snake has.
+ 00000674 00000000			score		DWORD 0								
+ 00000678 0000				speed		WORD 0
+					
+					
+ 00000000			.code
+ 00000000			main PROC
+ 00000000				begin::
+ 00000000  60					pushad						; pushing all registers to begin procedure
+ 00000001  E8 00000000 E			call Clrscr					; clearing out screen to avoid any memory collating with screen 
+ 00000006  66| B8 005A				mov ax,90        			; moves the value 90 into ax (accumulator) register for the angle 
+ 0000000A  66| A3				mov speed,ax	 			; moves the ax register value which is 90 into speed
+	   00000678 R
+ 00000010  B8 00000000				mov eax,0	 				; initializing eax register which is zero 
+ 00000015  A3 00000674 R			mov score,eax	 			; initializing score with eax register which is zero
+ 0000001A  B8 00000000				mov eax,0	 				; moving zero again in eax register
+ 0000001F  A3 00000670 R			mov NumOfNodes,eax 			; initializing number of nodes with eax register which is zero
+ 00000024  B0 00				mov al,0					; moves the value zero into al (accumulator) register for the apple counter
+ 00000026  A2 0000006D R			mov appleeaten,al			; initializing the apple (obstacle counter)
+ 0000002B  61					popad						; popping out all registers
+ 0000002C  B2 0E				mov dl, 14					; placing the pointer at the column section initialized as Dl ( in left middle corner) 
+ 0000002E  B6 02				mov dh, 2					; Placing the pointer at the row section initialized as DH
+ 00000030  E8 00000000 E			call Gotoxy					; placing it on the screen (screen size 80 x 25)
+ 00000035  B8 0000001F				mov eax, white+(blue*16)	; Text Color of Welcome Note
+ 0000003A  E8 00000000 E			call SetTextColor			; setting Text color using built in library function
+ 0000003F  BA 00000000 R			mov edx, OFFSET String1		; Printing Welcome Note(String1)
+ 00000044  E8 00000000 E			call WriteString			; printing welcome note on the screen
+ 00000049  B2 00				mov dl, 0					; placing the pointer at the column section initialized as Dl
+ 0000004B  B6 08				mov dh, 8					; Placing the pointer at the row section initialized as DH
+ 0000004D  E8 00000000 E			call Gotoxy			
+ 00000052  B8 00000002				mov eax, green				; Green Color
+ 00000057  E8 00000000 E			call SetTextColor			; Text Color GameSpeed Note(String4)
+ 0000005C  BA 00000057 R			mov edx, OFFSET String4		; showing game speed
+ 00000061  E8 00000000 E			call WriteString
+ 00000066  B2 0E				mov dl, 14					; placing the pointer at the column section initialized as Dl					
+ 00000068  B6 04				mov dh, 4					; Placing the pointer at the row section initialized as DH
+ 0000006A  E8 00000000 E			call Gotoxy					; calling gotoxy function to place it
+ 0000006F  B8 00000003				mov eax, cyan+(black*16)	; Background Color
+ 00000074  E8 00000000 E			call SetTextColor			; setting text color
+ 00000079  BA 00000070 R			mov edx, OFFSET bricks1		; Bricks(walls)
+ 0000007E  E8 00000000 E			call WriteString			; setting up wall bricks by at the corners
+ 00000083  B4 14				mov ah, 20					; function to display it on the boundaries
+						
+ 00000085				Wall:							; Wall Printing
+ 00000085  B2 0E				mov dl, 14					; setting up wall
+ 00000087  8A F4				mov dh, ah					; moving dh into Ah 
+ 00000089  E8 00000000 E			call Gotoxy			
+ 0000008E  FE CC				dec ah						; decrementing ah to locate it around all the boundary
+ 00000090  BA 000000A4 R			mov edx, OFFSET bricks2		; placing it by "+"
+ 00000095  E8 00000000 E			call WriteString			; writing it to the screen
+ 0000009A  80 FC 04				cmp ah, 4					; comparing it by 4 until reaches the end of horizontal screen
+ 0000009D  7F E6				jg Wall						; jumping to wall (looping again)
+ 0000009F  B2 0E				mov dl, 14					; moving value graph (14) on column 
+ 000000A1  B6 15				mov dh, 21					; moving value graph (21) on row 
+ 000000A3  E8 00000000 E			call Gotoxy
+ 000000A8  BA 00000070 R			mov edx, OFFSET bricks1		; Printing Pattern
+ 000000AD  E8 00000000 E			call WriteString
+						
+ 000000B2				RandomX:
+ 000000B2  B8 00000024				mov eax,36					; moving value of 36 into eax register
+ 000000B7  A2 00000067 R			mov x_head, al				; moving al register value into x_head
+ 000000BC  BE 000000B2 R			mov esi, OFFSET Nodes_X		; bounds of the zone. Nodes_x is an array of 735 BYTE DUP(0)
+ 000000C1  88 06				mov [esi], al				; moving al value into [esi] (memory address array as the counter)
+ 000000C3  8A D0				mov dl, al					; the coordinate is located into the array.
+						
+ 000000C5				RandomY:
+ 000000C5  B8 0000000C				mov eax,12					; moving value of 12 into eax (accumulator)
+ 000000CA  A2 00000068 R			mov y_head, al				; specified according to the bounds of the zone, then the coordinate is located into the array.
+ 000000CF  BE 00000391 R			mov esi, OFFSET Nodes_Y		; moving Nodes_Y (an array of 735 bytes) into esi (memory address array as the counter)
+ 000000D4  88 06				mov [esi], al				; moving al into esi  counter
+ 000000D6  8A F0				mov dh, al					; moving al into dh (row) which is the y_head
+ 000000D8  E8 00000000 E			call Gotoxy					; calling built in library gotoxy
+ 000000DD  A0 00000069 R			mov al, head				; moving al as the head counter
+ 000000E2  E8 00000000 E			call WriteChar				; writing the element
+						
+ 000000E7				Start:
+ 000000E7  E8 00000373				call CrashSnake				; Control if the snake eats itself.
+ 000000EC  E8 00000000 E			call ReadKey				; Read a key from the keyboard.
+ 000000F1  74 1B				jz SameDirection			; If no key is pressed the current direction be applied.
+ 000000F3  80 FC 51				cmp ah, 51H					; Keys except arrows
+ 000000F6  7F EF				jg Start					; looping around start by comparing the value 51H 
+ 000000F8  80 FC 47				cmp ah, 47H					; comparing value by 47H which is hexadecimal
+ 000000FB  7C EA				jl Start					; looping around to the start 
+ 000000FD  E8 00000023				call Move					; Start to move
+ 00000102  E8 00000287				call Configure				; Some configurations about the snake.
+ 00000107  E8 000002EE				call PrintNodes				; Print the snake on the screen with its nodes.
+ 0000010C  EB D9				jmp Start					; jumping to start again
+						
+ 0000010E				SameDirection:
+ 0000010E  8A 25 0000006E R			mov ah, direction			; The label to specify the current direction.
+ 00000114  E8 0000000C				call Move					; Continue moving
+ 00000119  E8 00000270				call Configure				; by controlling your configuration
+ 0000011E  E8 000002D7				call PrintNodes				; and by printing yourself on the screen.
+ 00000123  EB C2				jmp Start					; Jumping around start to check everything again				
+ 00000125				main ENDP
+					
+					
+ 00000125			Move PROC USES eax edx
+ 00000125  50		   *	    push   eax
+ 00000126  52		   *	    push   edx
+ 00000127  88 25 0000006E R		mov direction, ah				; Game Speed is calculated and
+ 0000012D  E8 000003CF			call GameSpeed					; printed on the screen.
+ 00000132  66| A1			mov ax, speed
+	   00000678 R
+ 00000138  0F B7 C0			movzx eax, ax					; It is done by delaying the motion
+ 0000013B  E8 00000000 E		call Delay						; of the snake.
+ 00000140  B2 00			mov dl, 0						; The calculated speed is printed
+ 00000142  B6 09			mov dh, 9						; on the screen.
+ 00000144  E8 00000000 E		call Gotoxy						; Initializing the pointer of the game snake
+ 00000149  66| A1			mov ax, speed				
+	   00000678 R
+ 0000014F  0F B7 C0			movzx eax, ax					; moves the unsigned values into a register and extends zero val to it 
+ 00000152  E8 00000000 E		call WriteInt					; Here is the speed of the game.
+ 00000157  8A 15 00000067 R		mov dl, x_head					; transferring the pointer as x_head and y_head
+ 0000015D  8A 35 00000068 R		mov dh, y_head
+ 00000163  E8 00000000 E		call Gotoxy						; calling the x and y procedure to pin point the obstacle	
+ 00000168  B0 20			mov al, ' '				
+ 0000016A  E8 00000000 E		call WriteChar					; When apple (obstacle is eaten) then it is attached to the pointer head(snake head)
+ 0000016F  E8 000000F0			call EatApple					; calls to get to eat the apple 
+ 00000174  8A 25 0000006E R		mov ah, direction				; The direction is passed to register "ah".
+ 0000017A  A0 0000006F R		mov al, olddirection			; The old direction is passed to register "al".
+ 0000017F  80 FA 40			cmp dl, 64						; If the head of the snake is located ob the bounds of the wall,unfortunately the game ends.
+ 00000182  7D 7F			jge GameOver					; jumps to game over if the head collides with the wall
+ 00000184  80 FA 0E			cmp dl, 14						; 64 - 16 dimensions are the wall boundary
+ 00000187  7E 7A			jle GameOver
+ 00000189  80 FE 15			cmp dh, 21						;21 is also a wall boundary 
+ 0000018C  7D 75			jge GameOver
+ 0000018E  80 FE 04			cmp dh, 4
+ 00000191  7E 70			jle GameOver
+ 00000193  80 FC 48			cmp ah, 48H						; Controlling the motion of the obstacle if its upward
+ 00000196  74 11			je Up							; jumping to the function of up 
+ 00000198  80 FC 50			cmp ah, 50H						; Controlling the motion of the obstacle if its downward
+ 0000019B  74 1B			je Down							; jumping to the function of down 
+ 0000019D  80 FC 4D			cmp ah, 4DH						; Controlling the motion of the obstacle if its right side
+ 000001A0  74 25			je Right						; jumping to the right side 
+ 000001A2  80 FC 4B			cmp ah, 4BH						; Controlling the motion of the obstacle if its left side
+ 000001A5  74 2F			je Left							; jumping to the left side 
+ 000001A7  EB 57			jmp Finish
+						
+ 000001A9				Up:	
+ 000001A9  C6 05 0000006F R			mov olddirection, 48H		; The motion of the snake is
+	   48
+ 000001B0  3C 50				cmp al, 50H					; This is being controlled by the keys to change direction
+ 000001B2  74 04				je Down						; upwards now.
+ 000001B4  FE CE				dec dh						; decreasing DH as it is decreasing row to go upwards
+ 000001B6  EB 2D				jmp UpdateHeadLoc			; jumps to update the head of the obstacle
+						
+ 000001B8				Down:
+ 000001B8  C6 05 0000006F R			mov olddirection, 50H		; The motion of the snake is
+	   50
+ 000001BF  3C 48				cmp al, 48H					; Changing directions by keys
+ 000001C1  74 E6				je Up						; downwards now.
+ 000001C3  FE C6				inc dh						; increasing dh to go downwards as dh is rows
+ 000001C5  EB 1E				jmp UpdateHeadLoc			; needs to update the head of the obstacle
+						
+ 000001C7				Right:
+ 000001C7  C6 05 0000006F R			mov olddirection, 4DH		; The motion of the snake is
+	   4D
+ 000001CE  3C 4B				cmp al, 4BH					; changing directions by keys being used as input
+ 000001D0  74 04				je Left						; leftwards now.
+ 000001D2  FE C2				inc dl						; incrementing column row
+ 000001D4  EB 0F				jmp UpdateHeadLoc			; needs to update the head of the obstacle
+						
+ 000001D6				Left:
+ 000001D6  C6 05 0000006F R			mov olddirection, 4BH		; The motion of the snake is
+	   4B
+ 000001DD  3C 4D				cmp al, 4DH
+ 000001DF  74 E6				je Right					; rightwards now.
+ 000001E1  FE CA				dec dl						; decreasing DL which is the column
+ 000001E3  EB 00				jmp UpdateHeadLoc
+						
+ 000001E5				UpdateHeadLoc:
+ 000001E5  88 15 00000067 R			mov x_head, dl				; The head of the snake is
+ 000001EB  88 35 00000068 R			mov y_head, dh				; updating the head of the snake as the position is being changed
+ 000001F1  E8 00000000 E			call Gotoxy					; located on the updated location.
+ 000001F6  A0 00000069 R			mov al, head
+ 000001FB  E8 00000000 E			call WriteChar				; Writing the head(front of the obstacle on the screen)
+						
+ 00000200				Finish:
+						ret							; returning the address of head and the dl and Dh of the section
+ 00000200  5A		   *	    pop    edx
+ 00000201  58		   *	    pop    eax
+ 00000202  C3		   *	    ret    00000h
+						
+ 00000203				GameOver:
+ 00000203  8A 15 00000067 R			mov dl, x_head				; If any error occurs the game ends
+ 00000209  8A 35 00000068 R			mov dh, y_head
+ 0000020F  E8 00000000 E			call Gotoxy					; by this label.
+ 00000214  A0 00000069 R			mov al, head				; Moving the address into the head
+ 00000219  E8 00000000 E			call WriteChar				; Writing the head to end of the game 
+ 0000021E  B8 000003E8				mov eax, 1000
+ 00000223  E8 00000000 E			call Delay					; After a short delay,  "GAME OVER!!!" message is displayed
+ 00000228  B2 21				mov dl, 33					; Changing the location of the obstacle to column [33]
+ 0000022A  B6 0D				mov dh, 13					; on the screen and is returned to OS.
+ 0000022C  E8 00000000 E			call Gotoxy					; calling the built in library to place it
+ 00000231  B8 0000004F				mov eax, white+(red*16)		; Set Text Color of "GAME OVER!!!"
+ 00000236  E8 00000000 E			call SetTextColor			; Changing the color of the text using built in library 
+ 0000023B  BA 0000003B R			mov edx, OFFSET String3		; Print Offset String3
+ 00000240  E8 00000000 E			call WriteString	
+ 00000245  B2 14				mov dl, 20				
+ 00000247  B6 18				mov dh, 24
+ 00000249  60					pushad						; Pushing all the registers to the end
+ 0000024A  E8 00000000 E			call readchar
+ 0000024F  3C 79				cmp al,'y'					; Prompting for new game by comparing it by y or no (it does not work)
+ 00000251  61					popad
+ 00000252  0F 84 FFFFFDA8			je begin					; If prompted yes then jumps to the game section begin again
+ 00000258  E8 00000000 E			call Gotoxy					; Setting up the board
+						exit
+ 0000025D  6A 00	   *	    push   +000000000h
+ 0000025F  E8 00000000 E   *	    call   ExitProcess
+ 00000264			Move ENDP
+					
+					
+ 00000264			EatApple PROC USES eax edx
+ 00000264  50		   *	    push   eax
+ 00000265  52		   *	    push   edx
+ 00000266				NewApple:
+ 00000266  A0 0000006D R			mov al, appleeaten			; After each apple is eaten
+ 0000026B  3C 00				cmp al, 0					; comparing it with zero
+ 0000026D  75 42				jne NotEaten				; another apple is located randomly
+					
+ 0000026F				RandomX:
+ 0000026F  C6 05 0000006D R			mov appleeaten, 1			; on the screen.
+	   01
+ 00000276  B8 00000040				mov eax, 64					; Randomizing the range for the new apple being placed
+ 0000027B  E8 00000000 E			call RandomRange			; The "x" and the "y" of the new apple
+ 00000280  3C 0F				cmp al, 15					; comparing it with the 15
+ 00000282  7C EB				jl RandomX					; are randomly specified and
+ 00000284  A2 0000006B R			mov x_apple, al				; placing the apple on the X coordinate 
+ 00000289  8A D0				mov dl, al					; printed on the screen.
+					
+ 0000028B				RandomY:
+ 0000028B  B8 00000012				mov eax, 18					; Random placement for the new apple at y coordinator
+ 00000290  E8 00000000 E			call RandomRange			; getting the random number within the range 
+ 00000295  3C 05				cmp al, 5	
+ 00000297  7C F2				jl RandomY					; if the number is not within the range/then start the function again
+ 00000299  A2 0000006C R			mov y_apple, al
+ 0000029E  8A F0				mov dh, al					; moving the al to DH which is row
+ 000002A0  E8 00000000 E			call Gotoxy
+ 000002A5  A0 000000AF R			mov al, apple
+ 000002AA  E8 00000000 E			call WriteChar				; Writing the apple on the screen/grid 
+ 000002AF  8A C2				mov al, dl
+					
+ 000002B1				NotEaten:
+ 000002B1  A0 00000067 R			mov al, x_head				; If the current apple on the screen
+ 000002B6  8A 25 00000068 R			mov ah, y_head				; transferring the head into the al/ah registers 
+ 000002BC  8A 15 0000006B R			mov dl, x_apple				; is not eaten,this means the head didn't
+ 000002C2  8A 35 0000006C R			mov dh, y_apple				; to check with the current apple 
+ 000002C8  66| 3B C2				cmp ax, dx					; pass over the apple and eat it,another
+ 000002CB  75 3B				jne Finish					; if not eaten then jump to finish
+ 000002CD  A1 00000670 R			mov eax, NumOfNodes			; apple is not produced.
+ 000002D2  40					inc eax						; apple is incremented
+ 000002D3  A3 00000670 R			mov NumOfNodes, eax			; Number Of Nodes of the snake is updated.
+ 000002D8  C6 05 0000006D R			mov appleeaten, 0			; There's no apple eaten yet.
+	   00
+ 000002DF  E8 00000027				call AddNodes				; Update and add nodes to the snake.
+ 000002E4  E8 00000208				call GameScore				; Game Score is updated after each eaten apple.
+ 000002E9  B2 1E				mov dl, 30					; transferring the to the pointer(obstacle)
+ 000002EB  B6 17				mov dh, 23
+ 000002ED  E8 00000000 E			call Gotoxy					; calling built in library function 
+ 000002F2  BA 0000002B R			mov edx, OFFSET String2		; Game Score is printed on the screen.
+ 000002F7  E8 00000000 E			call WriteString
+ 000002FC  A1 00000674 R			mov eax, score				; moving score into eax 
+ 00000301  E8 00000000 E			call WriteInt				; Writing the score int 
+ 00000306  EB 00				jmp Finish					; jumping to finish 
+					
+ 00000308				Finish:
+						ret							; returning the address
+ 00000308  5A		   *	    pop    edx
+ 00000309  58		   *	    pop    eax
+ 0000030A  C3		   *	    ret    00000h
+ 0000030B			EatApple ENDP
+					
+					
+ 0000030B			AddNodes PROC USES eax ebx ecx esi
+ 0000030B  50		   *	    push   eax
+ 0000030C  53		   *	    push   ebx
+ 0000030D  51		   *	    push   ecx
+ 0000030E  56		   *	    push   esi
+ 0000030F  8B 1D 00000670 R		mov ebx, NumOfNodes				; The procedure to control the
+ 00000315  83 FB 01			cmp ebx, 1						; Comparing the nodes to add new nodes to be eaten
+ 00000318  7D 1E			jge Continue					; addition of the nodes and update the 
+ 0000031A  BE 000000B2 R		mov esi, OFFSET Nodes_X			; getting the X node and y node and transferring it to the head
+ 0000031F  A0 00000067 R		mov al, x_head					; number of nodes.
+ 00000324  88 06			mov [esi], al
+ 00000326  8A 06			mov al, [esi]					; Transferring Y node to the register
+ 00000328  BE 00000391 R		mov esi, OFFSET Nodes_Y			; pasting it to esi memory address array 
+ 0000032D  A0 00000068 R		mov al, y_head
+ 00000332  88 06			mov [esi], al				
+ 00000334  8A 06			mov al, [esi]					; Storing the score (1 or 0 to check the apple)
+ 00000336  EB 51			jmp Finish
+					
+ 00000338				Continue:						; If appleeaten is "0" then
+ 00000338  A0 0000006D R			mov al, appleeaten			; the current apple was eaten and
+ 0000033D  0F B6 C0				movzx eax, al				; if it is "1",
+ 00000340  3C 00				cmp al, 0					; then the apple was not eaten.
+ 00000342  75 3B				jne NotEaten				; jumping to the function not eaten
+						
+ 00000344				Eaten:
+ 00000344  8B 0D 00000670 R			mov ecx, NumOfNodes			; Number of the nodes is
+ 0000034A  41					inc ecx						; passed to register "ecx".
+					
+ 0000034B				ShiftRight:
+ 0000034B  8B D9				mov ebx, ecx				; The Shift Right operation
+ 0000034D  BE 000000B2 R			mov esi, OFFSET Nodes_X		; moving the nodes_x into esi
+ 00000352  8A 44 1E FF				mov al, [esi+ebx-1]			; to make accommodation for
+ 00000356  88 04 1E				mov [esi+ebx], al
+ 00000359  BE 00000391 R			mov esi, OFFSET Nodes_Y		; new node. All of the nodes are
+ 0000035E  8A 44 1E FF				mov al, [esi+ebx-1]			; moving the nodes_Y into esi and decrementing it by 1 to shift to the right side
+ 00000362  88 04 1E				mov [esi+ebx], al			; shifted right and
+ 00000365  E2 E4				Loop ShiftRight
+ 00000367  BE 000000B2 R			mov esi, OFFSET Nodes_X		; the new node is placed by putting the values into the node X and Y 
+ 0000036C  A0 0000006B R			mov al, x_apple			
+ 00000371  88 06				mov [esi], al				; located to its place.
+ 00000373  BE 00000391 R			mov esi, OFFSET Nodes_Y
+ 00000378  A0 0000006C R			mov al, y_apple
+ 0000037D  88 06				mov [esi], al	
+						
+ 0000037F				NotEaten:
+ 0000037F  E8 0000000A				call Configure				; The nodes of the snake are
+ 00000384  E8 00000071				call PrintNodes				; updated on each move and printed
+					
+ 00000389				Finish:							; on the screen.
+						ret							; returning to the main function
+ 00000389  5E		   *	    pop    esi
+ 0000038A  59		   *	    pop    ecx
+ 0000038B  5B		   *	    pop    ebx
+ 0000038C  58		   *	    pop    eax
+ 0000038D  C3		   *	    ret    00000h
+ 0000038E			AddNodes ENDP
+
+
+ 0000038E			Configure PROC USES eax ebx ecx esi
+ 0000038E  50		   *	    push   eax
+ 0000038F  53		   *	    push   ebx
+ 00000390  51		   *	    push   ecx
+ 00000391  56		   *	    push   esi
+ 00000392  BE 000000B2 R		mov esi, OFFSET Nodes_X			; The configuration of the snake is
+ 00000397  8A 06			mov al, [esi]					; getting the snake coordinates to the registers to configure it
+ 00000399  A2 000000B0 R		mov x_tail, al					; done by this procedure.
+ 0000039E  BE 00000391 R		mov esi, OFFSET Nodes_Y			; getting x and y nodes of the snake 
+ 000003A3  8A 06			mov al, [esi]					; The old tail is saved to be erased.
+ 000003A5  A2 000000B1 R		mov y_tail, al					; replacing the old nodes 
+ 000003AA  BB 00000001			mov ebx, 1
+ 000003AF  8B 0D 00000670 R		mov ecx, NumOfNodes
+ 000003B5  41				inc ecx							; incrementing the nodes by one
+					
+ 000003B6				ShiftLeft:
+ 000003B6  BE 000000B2 R			mov esi, OFFSET Nodes_X		; This Shift Left operation is applied to renew the locations of each nodes
+ 000003BB  8A 04 1E				mov al, [esi+ebx]
+ 000003BE  88 44 1E FF				mov [esi+ebx-1], al			; shifting the snake to left side as the user direct to the left direction
+ 000003C2  BE 00000391 R			mov esi, OFFSET Nodes_Y
+ 000003C7  8A 04 1E				mov al, [esi+ebx]			; getting the X nodes and Y nodes
+ 000003CA  88 44 1E FF				mov [esi+ebx-1], al			; Decrementing the column to shift left
+ 000003CE  8A 06				mov al, [esi]				 
+ 000003D0  43					inc ebx						; Incrementing the row 
+							
+ 000003D1  E2 E3				Loop ShiftLeft				 
+ 000003D3  8B 1D 00000670 R			mov ebx, NumOfNodes
+ 000003D9  BE 000000B2 R			mov esi, OFFSET Nodes_X		; shifting the nodes again
+ 000003DE  A0 00000067 R			mov al, x_head
+ 000003E3  88 04 1E				mov [esi+ebx], al
+ 000003E6  8A 06				mov al, [esi]
+ 000003E8  BE 00000391 R			mov esi, OFFSET Nodes_Y		; transferring the values again into x and y nodes
+ 000003ED  A0 00000068 R			mov al, y_head
+ 000003F2  88 04 1E				mov [esi+ebx], al			; saving the location of the snake
+						ret
+ 000003F5  5E		   *	    pop    esi
+ 000003F6  59		   *	    pop    ecx
+ 000003F7  5B		   *	    pop    ebx
+ 000003F8  58		   *	    pop    eax
+ 000003F9  C3		   *	    ret    00000h
+ 000003FA			Configure ENDP
+
+
+ 000003FA			PrintNodes PROC USES eax ebx ecx edx esi
+ 000003FA  50		   *	    push   eax
+ 000003FB  53		   *	    push   ebx
+ 000003FC  51		   *	    push   ecx
+ 000003FD  52		   *	    push   edx
+ 000003FE  56		   *	    push   esi
+ 000003FF  8A 15 000000B0 R		mov dl, x_tail					; The coordinates of the nodes and the head are taken from the arrays and
+ 00000405  8A 35 000000B1 R		mov dh, y_tail					; moving the x and y tail on the nodes 
+ 0000040B  E8 00000000 E		call Gotoxy				 
+ 00000410  B0 20			mov al, ' '						; placing the node on the screen 
+ 00000412  E8 00000000 E		call WriteChar					; Printing it to the screen
+ 00000417  8B 0D 00000670 R		mov ecx, NumOfNodes
+ 0000041D  41				inc ecx							; incrementing the number of nodes
+					
+ 0000041E				Print:
+ 0000041E  8B D9				mov ebx, ecx
+ 00000420  BE 000000B2 R			mov esi, OFFSET Nodes_X
+ 00000425  8A 44 1E FF				mov al, [esi+ebx-1]			; Printing loop for all the nodes of the snake
+ 00000429  8A D0				mov dl, al
+ 0000042B  BE 00000391 R			mov esi, OFFSET Nodes_Y
+ 00000430  8A 44 1E FF				mov al, [esi+ebx-1]			; The addresses of the arrays are
+ 00000434  8A F0				mov dh, al
+ 00000436  E8 00000000 E			call Gotoxy					; enough to reach each node and head.
+ 0000043B  8B 15 00000670 R			mov edx, NumOfNodes			; The head is printed as its own character
+ 00000441  42					inc edx						; Incrementing the address
+ 00000442  3B CA				cmp ecx, edx				; and the nodes are printed as they are.
+ 00000444  75 07				jne PrintNode				; Printing the nodes 
+ 00000446  A0 00000069 R			mov al, head				
+ 0000044B  EB 05				jmp Printt
+					
+ 0000044D				PrintNode:
+ 0000044D  A0 0000006A R			mov al, node
+					
+ 00000452				Printt:
+ 00000452  E8 00000000 E			call WriteChar
+ 00000457  E2 C5				Loop Print
+						ret
+ 00000459  5E		   *	    pop    esi
+ 0000045A  5A		   *	    pop    edx
+ 0000045B  59		   *	    pop    ecx
+ 0000045C  5B		   *	    pop    ebx
+ 0000045D  58		   *	    pop    eax
+ 0000045E  C3		   *	    ret    00000h
+ 0000045F			PrintNodes ENDP
+
+
+ 0000045F			CrashSnake PROC USES eax ebx ecx edx esi
+ 0000045F  50		   *	    push   eax
+ 00000460  53		   *	    push   ebx
+ 00000461  51		   *	    push   ecx
+ 00000462  52		   *	    push   edx
+ 00000463  56		   *	    push   esi
+ 00000464  8B 0D 00000670 R		mov ecx, NumOfNodes				; This procedure controls if the
+ 0000046A  83 F9 03			cmp ecx, 3
+ 0000046D  7E 7C			jle Finish						; snake eats any of its nodes.
+ 0000046F  41				inc ecx
+					
+ 00000470				Crash:							; If it eats any of its nodes or tail
+ 00000470  8B D9				mov ebx, ecx	
+ 00000472  BE 000000B2 R			mov esi, OFFSET Nodes_X		; it crashes and the game ends.
+ 00000477  8A 44 1E FE				mov al, [esi+ebx-2]
+ 0000047B  8A D0				mov dl, al
+ 0000047D  BE 00000391 R			mov esi, OFFSET Nodes_Y		; The coordinates of the head are
+ 00000482  8A 44 1E FE				mov al, [esi+ebx-2]
+ 00000486  8A F0				mov dh, al					; compared with the nodes and tail
+ 00000488  A0 00000067 R			mov al, x_head
+ 0000048D  8A 25 00000068 R			mov ah, y_head				; which are held into the arrays that
+ 00000493  66| 3B D0				cmp dx, ax
+ 00000496  74 02				je Lengthh					; are named Nodes_X and Nodes_Y.
+ 00000498  EB 4F				jmp Endd
+						
+ 0000049A				Lengthh:						; The snake cannot eat its head so,
+ 0000049A  8B 15 00000670 R			mov edx, NumOfNodes
+ 000004A0  42					inc edx						; after 3 nodes this control is started.
+ 000004A1  3B CA				cmp ecx, edx
+ 000004A3  74 44				je Endd
+
+ 000004A5				EndOfGame:
+ 000004A5  8A 15 00000067 R			mov dl, x_head				; If the snake eats its nodes or tail,
+ 000004AB  8A 35 00000068 R			mov dh, y_head
+ 000004B1  E8 00000000 E			call Gotoxy					; the game ends because of the crash.
+ 000004B6  A0 00000069 R			mov al, head
+ 000004BB  E8 00000000 E			call WriteChar
+ 000004C0  B2 21				mov dl, 33
+ 000004C2  B6 0D				mov dh, 13					; The game ending signs are configured
+ 000004C4  E8 00000000 E			call Gotoxy
+ 000004C9  BA 0000003B R			mov edx, OFFSET String3		; and printed on the screen.
+ 000004CE  E8 00000000 E			call WriteString
+ 000004D3  60					pushad
+ 000004D4  E8 00000000 E			call readchar
+ 000004D9  3C 79				cmp al,'y'
+ 000004DB  0F 84 FFFFFB1F			je begin
+ 000004E1  61					popad
+						exit
+ 000004E2  6A 00	   *	    push   +000000000h
+ 000004E4  E8 00000000 E   *	    call   ExitProcess
+					
+ 000004E9				Endd:
+ 000004E9  E2 85				Loop Crash
+					
+ 000004EB				Finish:
+						ret
+ 000004EB  5E		   *	    pop    esi
+ 000004EC  5A		   *	    pop    edx
+ 000004ED  59		   *	    pop    ecx
+ 000004EE  5B		   *	    pop    ebx
+ 000004EF  58		   *	    pop    eax
+ 000004F0  C3		   *	    ret    00000h
+ 000004F1			CrashSnake ENDP
+
+
+ 000004F1			GameScore PROC USES eax				; This procedure controls
+ 000004F1  50		   *	    push   eax
+ 000004F2  A1 00000674 R		mov eax, score
+ 000004F7  83 C0 01			add eax, 1						; the score of the game.
+ 000004FA  A3 00000674 R		mov score, eax					; Each eaten apple is "1" point.
+					ret								; It is performed accoding to the
+ 000004FF  58		   *	    pop    eax
+ 00000500  C3		   *	    ret    00000h
+ 00000501			GameScore ENDP						; number of the apples eaten.
+
+
+ 00000501			GameSpeed PROC USES eax ebx edx
+ 00000501  50		   *	    push   eax
+ 00000502  53		   *	    push   ebx
+ 00000503  52		   *	    push   edx
+ 00000504  BA 00000000			mov edx, 0				
+ 00000509  A1 00000674 R		mov eax, score					; moving score into the register
+ 0000050E  BB 0000000A			mov ebx, 10						; moving 10 into ebx
+ 00000513  F7 F3			div ebx							; if the score divided by 10 is more than one then the speed is increased
+ 00000515  83 FA 01			cmp edx, 1
+ 00000518  75 20			jne Finish						; if its not equal to one then jumps to the finish section
+ 0000051A  66| A1			mov ax, speed					; else increase it by 10 
+	   00000678 R
+ 00000520  66| BB 000A			mov bx, 10
+ 00000524  66| 2B C3			sub ax, bx						; After each 10 apple, the speed of the game increases.
+ 00000527  66| A3			mov speed, ax
+	   00000678 R
+ 0000052D  A1 00000674 R		mov eax,score					; moving ths score again into eax register		
+ 00000532  83 C0 01			add eax,1
+ 00000535  A3 00000674 R		mov score,eax 
+					
+ 0000053A				Finish:
+						ret
+ 0000053A  5A		   *	    pop    edx
+ 0000053B  5B		   *	    pop    ebx
+ 0000053C  58		   *	    pop    eax
+ 0000053D  C3		   *	    ret    00000h
+ 0000053E			GameSpeed ENDP
+
+
+					exit
+ 0000053E  6A 00	   *	    push   +000000000h
+ 00000540  E8 00000000 E   *	    call   ExitProcess
+				END main
+Microsoft (R) Macro Assembler Version 14.23.28106.4	    12/04/19 20:13:28
+SnakeXenia.as						     Symbols 2 - 1
+
+
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+CONSOLE_CURSOR_INFO  . . . . . .	 00000008
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  bVisible . . . . . . . . . . .	 00000004	 DWord
+CONSOLE_SCREEN_BUFFER_INFO . . .	 00000016
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCursorPosition . . . . . . .	 00000004	 DWord
+  wAttributes  . . . . . . . . .	 00000008	 Word
+  srWindow . . . . . . . . . . .	 0000000A	 QWord
+  dwMaximumWindowSize  . . . . .	 00000012	 DWord
+COORD  . . . . . . . . . . . . .	 00000004
+  X  . . . . . . . . . . . . . .	 00000000	 Word
+  Y  . . . . . . . . . . . . . .	 00000002	 Word
+FILETIME . . . . . . . . . . . .	 00000008
+  loDateTime . . . . . . . . . .	 00000000	 DWord
+  hiDateTime . . . . . . . . . .	 00000004	 DWord
+FOCUS_EVENT_RECORD . . . . . . .	 00000004
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+FPU_ENVIRON  . . . . . . . . . .	 0000001C
+  controlWord  . . . . . . . . .	 00000000	 Word
+  statusWord . . . . . . . . . .	 00000004	 Word
+  tagWord  . . . . . . . . . . .	 00000008	 Word
+  instrPointerOffset . . . . . .	 0000000C	 DWord
+  instrPointerSelector . . . . .	 00000010	 DWord
+  operandPointerOffset . . . . .	 00000014	 DWord
+  operandPointerSelector . . . .	 00000018	 Word
+INPUT_RECORD . . . . . . . . . .	 00000014
+  EventType  . . . . . . . . . .	 00000000	 Word
+  Event  . . . . . . . . . . . .	 00000004	 XmmWord
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+KEY_EVENT_RECORD . . . . . . . .	 00000010
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+MENU_EVENT_RECORD  . . . . . . .	 00000004
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+MOUSE_EVENT_RECORD . . . . . . .	 00000010
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+SMALL_RECT . . . . . . . . . . .	 00000008
+  Left . . . . . . . . . . . . .	 00000000	 Word
+  Top  . . . . . . . . . . . . .	 00000002	 Word
+  Right  . . . . . . . . . . . .	 00000004	 Word
+  Bottom . . . . . . . . . . . .	 00000006	 Word
+SYSTEMTIME . . . . . . . . . . .	 00000010
+  wYear  . . . . . . . . . . . .	 00000000	 Word
+  wMonth . . . . . . . . . . . .	 00000002	 Word
+  wDayOfWeek . . . . . . . . . .	 00000004	 Word
+  wDay . . . . . . . . . . . . .	 00000006	 Word
+  wHour  . . . . . . . . . . . .	 00000008	 Word
+  wMinute  . . . . . . . . . . .	 0000000A	 Word
+  wSecond  . . . . . . . . . . .	 0000000C	 Word
+  wMilliseconds  . . . . . . . .	 0000000E	 Word
+WINDOW_BUFFER_SIZE_RECORD  . . .	 00000004
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000067A Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000545 Para	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+AddNodes . . . . . . . . . . . .	P Near	 0000030B _TEXT	Length= 00000083 Public STDCALL
+  Continue . . . . . . . . . . .	L Near	 00000338 _TEXT	
+  Eaten  . . . . . . . . . . . .	L Near	 00000344 _TEXT	
+  ShiftRight . . . . . . . . . .	L Near	 0000034B _TEXT	
+  NotEaten . . . . . . . . . . .	L Near	 0000037F _TEXT	
+  Finish . . . . . . . . . . . .	L Near	 00000389 _TEXT	
+CloseFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CloseHandle  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Clrscr . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Configure  . . . . . . . . . . .	P Near	 0000038E _TEXT	Length= 0000006C Public STDCALL
+  ShiftLeft  . . . . . . . . . .	L Near	 000003B6 _TEXT	
+CrashSnake . . . . . . . . . . .	P Near	 0000045F _TEXT	Length= 00000092 Public STDCALL
+  Crash  . . . . . . . . . . . .	L Near	 00000470 _TEXT	
+  Lengthh  . . . . . . . . . . .	L Near	 0000049A _TEXT	
+  EndOfGame  . . . . . . . . . .	L Near	 000004A5 _TEXT	
+  Endd . . . . . . . . . . . . .	L Near	 000004E9 _TEXT	
+  Finish . . . . . . . . . . . .	L Near	 000004EB _TEXT	
+CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateOutputFile . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Crlf . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Delay  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+EatApple . . . . . . . . . . . .	P Near	 00000264 _TEXT	Length= 000000A7 Public STDCALL
+  NewApple . . . . . . . . . . .	L Near	 00000266 _TEXT	
+  RandomX  . . . . . . . . . . .	L Near	 0000026F _TEXT	
+  RandomY  . . . . . . . . . . .	L Near	 0000028B _TEXT	
+  NotEaten . . . . . . . . . . .	L Near	 000002B1 _TEXT	
+  Finish . . . . . . . . . . . .	L Near	 00000308 _TEXT	
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToDosDateTime  . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToSystemTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FlushConsoleInputBuffer  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FormatMessageA . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GameScore  . . . . . . . . . . .	P Near	 000004F1 _TEXT	Length= 00000010 Public STDCALL
+GameSpeed  . . . . . . . . . . .	P Near	 00000501 _TEXT	Length= 0000003D Public STDCALL
+  Finish . . . . . . . . . . . .	L Near	 0000053A _TEXT	
+GetCommandLineA  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandTail . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCP . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleScreenBufferInfo . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetDateTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetFileTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetKeyState  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLastError . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMaxXY . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMseconds  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetNumberOfConsoleInputEvents  .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetProcessHeap . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetStdHandle . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetSystemTime  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTickCount . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Gotoxy . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapAlloc  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapCreate . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapDestroy  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapFree . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapSize . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+IsDigit  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+LocalFree  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MessageBoxA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Move . . . . . . . . . . . . . .	P Near	 00000125 _TEXT	Length= 0000013F Public STDCALL
+  Up . . . . . . . . . . . . . .	L Near	 000001A9 _TEXT	
+  Down . . . . . . . . . . . . .	L Near	 000001B8 _TEXT	
+  Right  . . . . . . . . . . . .	L Near	 000001C7 _TEXT	
+  Left . . . . . . . . . . . . .	L Near	 000001D6 _TEXT	
+  UpdateHeadLoc  . . . . . . . .	L Near	 000001E5 _TEXT	
+  Finish . . . . . . . . . . . .	L Near	 00000200 _TEXT	
+  GameOver . . . . . . . . . . .	L Near	 00000203 _TEXT	
+MsgBoxAsk  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBox . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+OpenInputFile  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseDecimal32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseInteger32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+PeekConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+PrintNodes . . . . . . . . . . .	P Near	 000003FA _TEXT	Length= 00000065 Public STDCALL
+  Print  . . . . . . . . . . . .	L Near	 0000041E _TEXT	
+  PrintNode  . . . . . . . . . .	L Near	 0000044D _TEXT	
+  Printt . . . . . . . . . . . .	L Near	 00000452 _TEXT	
+Random32 . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+RandomRange  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Randomize  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleA . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadDec  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFile . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFloat  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFromFile . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadHex  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleScreenBufferSize . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTextAttribute  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTitleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleWindowInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetFilePointer . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ShowFPUStack . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Sleep  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+StrLength  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_compare  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_copy . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_length . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_trim . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_ucase  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SystemTimeToFileTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WaitMsg  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBinB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBin . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleA  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputAttribute  . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputCharacterA . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteDec . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFloat . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHexB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHex . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000125 Public STDCALL
+  Wall . . . . . . . . . . . . .	L Near	 00000085 _TEXT	
+  RandomX  . . . . . . . . . . .	L Near	 000000B2 _TEXT	
+  RandomY  . . . . . . . . . . .	L Near	 000000C5 _TEXT	
+  Start  . . . . . . . . . . . .	L Near	 000000E7 _TEXT	
+  SameDirection  . . . . . . . .	L Near	 0000010E _TEXT	
+printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+ALT_MASK . . . . . . . . . . . .	Number	 00000003h   
+CAPSLOCK_ON  . . . . . . . . . .	Number	 00000080h   
+CREATE_ALWAYS  . . . . . . . . .	Number	 00000002h   
+CREATE_NEW . . . . . . . . . . .	Number	 00000001h   
+CTRL_MASK  . . . . . . . . . . .	Number	 0000000Ch   
+CreateFile . . . . . . . . . . .	Text   	 CreateFileA
+DO_NOT_SHARE . . . . . . . . . .	Number	 00000000h   
+ENABLE_ECHO_INPUT  . . . . . . .	Number	 00000004h   
+ENABLE_LINE_INPUT  . . . . . . .	Number	 00000002h   
+ENABLE_MOUSE_INPUT . . . . . . .	Number	 00000010h   
+ENABLE_PROCESSED_INPUT . . . . .	Number	 00000001h   
+ENABLE_PROCESSED_OUTPUT  . . . .	Number	 00000001h   
+ENABLE_WINDOW_INPUT  . . . . . .	Number	 00000008h   
+ENABLE_WRAP_AT_EOL_OUTPUT  . . .	Number	 00000002h   
+ENHANCED_KEY . . . . . . . . . .	Number	 00000100h   
+FALSE  . . . . . . . . . . . . .	Number	 00000000h   
+FILE_APPEND_DATA . . . . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_ARCHIVE . . . . .	Number	 00000020h   
+FILE_ATTRIBUTE_COMPRESSED  . . .	Number	 00000800h   
+FILE_ATTRIBUTE_DEVICE  . . . . .	Number	 00000040h   
+FILE_ATTRIBUTE_DIRECTORY . . . .	Number	 00000010h   
+FILE_ATTRIBUTE_ENCRYPTED . . . .	Number	 00004000h   
+FILE_ATTRIBUTE_HIDDEN  . . . . .	Number	 00000002h   
+FILE_ATTRIBUTE_NORMAL  . . . . .	Number	 00000080h   
+FILE_ATTRIBUTE_NOT_CONTENT_INDEXED .	Number	 00002000h   
+FILE_ATTRIBUTE_OFFLINE . . . . .	Number	 00001000h   
+FILE_ATTRIBUTE_READONLY  . . . .	Number	 00000001h   
+FILE_ATTRIBUTE_REPARSE_POINT . .	Number	 00000400h   
+FILE_ATTRIBUTE_SPARSE_FILE . . .	Number	 00000200h   
+FILE_ATTRIBUTE_SYSTEM  . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_TEMPORARY . . . .	Number	 00000100h   
+FILE_BEGIN . . . . . . . . . . .	Number	 00000000h   
+FILE_CURRENT . . . . . . . . . .	Number	 00000001h   
+FILE_DELETE_CHILD  . . . . . . .	Number	 00000040h   
+FILE_END . . . . . . . . . . . .	Number	 00000002h   
+FILE_READ_DATA . . . . . . . . .	Number	 00000001h   
+FILE_SHARE_DELETE  . . . . . . .	Number	 00000004h   
+FILE_SHARE_READ  . . . . . . . .	Number	 00000001h   
+FILE_SHARE_WRITE . . . . . . . .	Number	 00000002h   
+FILE_WRITE_DATA  . . . . . . . .	Number	 00000002h   
+FOCUS_EVENT  . . . . . . . . . .	Number	 00000010h   
+FORMAT_MESSAGE_ALLOCATE_BUFFER .	Number	 00000100h   
+FORMAT_MESSAGE_FROM_SYSTEM . . .	Number	 00001000h   
+FormatMessage  . . . . . . . . .	Text   	 FormatMessageA
+GENERIC_ALL  . . . . . . . . . .	Number	 10000000h   
+GENERIC_EXECUTE  . . . . . . . .	Number	 20000000h   
+GENERIC_READ . . . . . . . . . .	Number	 -80000000h   
+GENERIC_WRITE  . . . . . . . . .	Number	 40000000h   
+GetCommandLine . . . . . . . . .	Text   	 GetCommandLineA
+HANDLE . . . . . . . . . . . . .	Text   	 DWORD
+HEAP_GENERATE_EXCEPTIONS . . . .	Number	 00000004h   
+HEAP_GROWABLE  . . . . . . . . .	Number	 00000002h   
+HEAP_NO_SERIALIZE  . . . . . . .	Number	 00000001h   
+HEAP_REALLOC_IN_PLACE_ONLY . . .	Number	 00000010h   
+HEAP_ZERO_MEMORY . . . . . . . .	Number	 00000008h   
+IDABORT  . . . . . . . . . . . .	Number	 00000003h   
+IDCANCEL . . . . . . . . . . . .	Number	 00000002h   
+IDCLOSE  . . . . . . . . . . . .	Number	 00000008h   
+IDCONTINUE . . . . . . . . . . .	Number	 0000000Bh   
+IDHELP . . . . . . . . . . . . .	Number	 00000009h   
+IDIGNORE . . . . . . . . . . . .	Number	 00000005h   
+IDNO . . . . . . . . . . . . . .	Number	 00000007h   
+IDOK . . . . . . . . . . . . . .	Number	 00000001h   
+IDRETRY  . . . . . . . . . . . .	Number	 00000004h   
+IDTIMEOUT  . . . . . . . . . . .	Number	 00007D00h   
+IDTRYAGAIN . . . . . . . . . . .	Number	 0000000Ah   
+IDYES  . . . . . . . . . . . . .	Number	 00000006h   
+INVALID_HANDLE_VALUE . . . . . .	Number	 -00000001h   
+KBDOWN_FLAG  . . . . . . . . . .	Number	 00000001h   
+KEY_EVENT  . . . . . . . . . . .	Number	 00000001h   
+KEY_MASKS  . . . . . . . . . . .	Number	 0000001Fh   
+LEFT_ALT_PRESSED . . . . . . . .	Number	 00000002h   
+LEFT_CTRL_PRESSED  . . . . . . .	Number	 00000008h   
+MB_ABORTRETRYIGNORE  . . . . . .	Number	 00000002h   
+MB_APPLMODAL . . . . . . . . . .	Number	 00000000h   
+MB_CANCELTRYCONTINUE . . . . . .	Number	 00000006h   
+MB_DEFBUTTON1  . . . . . . . . .	Number	 00000000h   
+MB_DEFBUTTON2  . . . . . . . . .	Number	 00000100h   
+MB_DEFBUTTON3  . . . . . . . . .	Number	 00000200h   
+MB_DEFBUTTON4  . . . . . . . . .	Number	 00000300h   
+MB_HELP  . . . . . . . . . . . .	Number	 00004000h   
+MB_ICONASTERISK  . . . . . . . .	Number	 00000040h   
+MB_ICONERROR . . . . . . . . . .	Number	 00000010h   
+MB_ICONEXCLAMATION . . . . . . .	Number	 00000030h   
+MB_ICONHAND  . . . . . . . . . .	Number	 00000010h   
+MB_ICONINFORMATION . . . . . . .	Number	 00000040h   
+MB_ICONQUESTION  . . . . . . . .	Number	 00000020h   
+MB_ICONSTOP  . . . . . . . . . .	Number	 00000010h   
+MB_ICONWARNING . . . . . . . . .	Number	 00000030h   
+MB_OKCANCEL  . . . . . . . . . .	Number	 00000001h   
+MB_OK  . . . . . . . . . . . . .	Number	 00000000h   
+MB_RETRYCANCEL . . . . . . . . .	Number	 00000005h   
+MB_SYSTEMMODAL . . . . . . . . .	Number	 00001000h   
+MB_TASKMODAL . . . . . . . . . .	Number	 00002000h   
+MB_USERICON  . . . . . . . . . .	Number	 00000080h   
+MB_YESNOCANCEL . . . . . . . . .	Number	 00000003h   
+MB_YESNO . . . . . . . . . . . .	Number	 00000004h   
+MENU_EVENT . . . . . . . . . . .	Number	 00000008h   
+MOUSE_EVENT  . . . . . . . . . .	Number	 00000002h   
+MessageBox . . . . . . . . . . .	Text   	 MessageBoxA
+NULL . . . . . . . . . . . . . .	Number	 00000000h   
+NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
+Nodes_X  . . . . . . . . . . . .	Byte	 000000B2 _DATA	
+Nodes_Y  . . . . . . . . . . . .	Byte	 00000391 _DATA	
+NumOfNodes . . . . . . . . . . .	DWord	 00000670 _DATA	
+OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
+OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
+RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h   
+RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
+ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
+ReadConsole  . . . . . . . . . .	Text   	 ReadConsoleA
+SCROLLLOCK_ON  . . . . . . . . .	Number	 00000040h   
+SHIFT_MASK . . . . . . . . . . .	Number	 00000010h   
+SHIFT_PRESSED  . . . . . . . . .	Number	 00000010h   
+STD_ERROR_HANDLE . . . . . . . .	Number	 -0000000Ch   
+STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah   
+STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
+SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
+String1  . . . . . . . . . . . .	Byte	 00000000 _DATA	
+String2  . . . . . . . . . . . .	Byte	 0000002B _DATA	
+String3  . . . . . . . . . . . .	Byte	 0000003B _DATA	
+String4  . . . . . . . . . . . .	Byte	 00000057 _DATA	
+TAB  . . . . . . . . . . . . . .	Number	 00000009h   
+TRUE . . . . . . . . . . . . . .	Number	 00000001h   
+TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
+VK_11  . . . . . . . . . . . . .	Number	 000000BDh   
+VK_12  . . . . . . . . . . . . .	Number	 000000BBh   
+VK_ADD . . . . . . . . . . . . .	Number	 0000006Bh   
+VK_BACK  . . . . . . . . . . . .	Number	 00000008h   
+VK_CANCEL  . . . . . . . . . . .	Number	 00000003h   
+VK_CAPITAL . . . . . . . . . . .	Number	 00000014h   
+VK_CLEAR . . . . . . . . . . . .	Number	 0000000Ch   
+VK_CONTROL . . . . . . . . . . .	Number	 00000011h   
+VK_DECIMAL . . . . . . . . . . .	Number	 0000006Eh   
+VK_DELETE  . . . . . . . . . . .	Number	 0000002Eh   
+VK_DIVIDE  . . . . . . . . . . .	Number	 0000006Fh   
+VK_DOWN  . . . . . . . . . . . .	Number	 00000028h   
+VK_END . . . . . . . . . . . . .	Number	 00000023h   
+VK_ESCAPE  . . . . . . . . . . .	Number	 0000001Bh   
+VK_EXECUTE . . . . . . . . . . .	Number	 0000002Bh   
+VK_F10 . . . . . . . . . . . . .	Number	 00000079h   
+VK_F11 . . . . . . . . . . . . .	Number	 0000007Ah   
+VK_F12 . . . . . . . . . . . . .	Number	 0000007Bh   
+VK_F13 . . . . . . . . . . . . .	Number	 0000007Ch   
+VK_F14 . . . . . . . . . . . . .	Number	 0000007Dh   
+VK_F15 . . . . . . . . . . . . .	Number	 0000007Eh   
+VK_F16 . . . . . . . . . . . . .	Number	 0000007Fh   
+VK_F17 . . . . . . . . . . . . .	Number	 00000080h   
+VK_F18 . . . . . . . . . . . . .	Number	 00000081h   
+VK_F19 . . . . . . . . . . . . .	Number	 00000082h   
+VK_F1  . . . . . . . . . . . . .	Number	 00000070h   
+VK_F20 . . . . . . . . . . . . .	Number	 00000083h   
+VK_F21 . . . . . . . . . . . . .	Number	 00000084h   
+VK_F22 . . . . . . . . . . . . .	Number	 00000085h   
+VK_F23 . . . . . . . . . . . . .	Number	 00000086h   
+VK_F24 . . . . . . . . . . . . .	Number	 00000087h   
+VK_F2  . . . . . . . . . . . . .	Number	 00000071h   
+VK_F3  . . . . . . . . . . . . .	Number	 00000072h   
+VK_F4  . . . . . . . . . . . . .	Number	 00000073h   
+VK_F5  . . . . . . . . . . . . .	Number	 00000074h   
+VK_F6  . . . . . . . . . . . . .	Number	 00000075h   
+VK_F7  . . . . . . . . . . . . .	Number	 00000076h   
+VK_F8  . . . . . . . . . . . . .	Number	 00000077h   
+VK_F9  . . . . . . . . . . . . .	Number	 00000078h   
+VK_HELP  . . . . . . . . . . . .	Number	 0000002Fh   
+VK_HOME  . . . . . . . . . . . .	Number	 00000024h   
+VK_INSERT  . . . . . . . . . . .	Number	 0000002Dh   
+VK_LBUTTON . . . . . . . . . . .	Number	 00000001h   
+VK_LCONTROL  . . . . . . . . . .	Number	 000000A2h   
+VK_LEFT  . . . . . . . . . . . .	Number	 00000025h   
+VK_LMENU . . . . . . . . . . . .	Number	 000000A4h   
+VK_LSHIFT  . . . . . . . . . . .	Number	 000000A0h   
+VK_MENU  . . . . . . . . . . . .	Number	 00000012h   
+VK_MULTIPLY  . . . . . . . . . .	Number	 0000006Ah   
+VK_NEXT  . . . . . . . . . . . .	Number	 00000022h   
+VK_NUMLOCK . . . . . . . . . . .	Number	 00000090h   
+VK_NUMPAD0 . . . . . . . . . . .	Number	 00000060h   
+VK_NUMPAD1 . . . . . . . . . . .	Number	 00000061h   
+VK_NUMPAD2 . . . . . . . . . . .	Number	 00000062h   
+VK_NUMPAD3 . . . . . . . . . . .	Number	 00000063h   
+VK_NUMPAD4 . . . . . . . . . . .	Number	 00000064h   
+VK_NUMPAD5 . . . . . . . . . . .	Number	 00000065h   
+VK_NUMPAD6 . . . . . . . . . . .	Number	 00000066h   
+VK_NUMPAD7 . . . . . . . . . . .	Number	 00000067h   
+VK_NUMPAD8 . . . . . . . . . . .	Number	 00000068h   
+VK_NUMPAD9 . . . . . . . . . . .	Number	 00000069h   
+VK_PAUSE . . . . . . . . . . . .	Number	 00000013h   
+VK_PRINT . . . . . . . . . . . .	Number	 0000002Ah   
+VK_PRIOR . . . . . . . . . . . .	Number	 00000021h   
+VK_RBUTTON . . . . . . . . . . .	Number	 00000002h   
+VK_RCONTROL  . . . . . . . . . .	Number	 000000A3h   
+VK_RETURN  . . . . . . . . . . .	Number	 0000000Dh   
+VK_RIGHT . . . . . . . . . . . .	Number	 00000027h   
+VK_RMENU . . . . . . . . . . . .	Number	 000000A5h   
+VK_RSHIFT  . . . . . . . . . . .	Number	 000000A1h   
+VK_SCROLL  . . . . . . . . . . .	Number	 00000091h   
+VK_SEPARATER . . . . . . . . . .	Number	 0000006Ch   
+VK_SHIFT . . . . . . . . . . . .	Number	 00000010h   
+VK_SNAPSHOT  . . . . . . . . . .	Number	 0000002Ch   
+VK_SPACE . . . . . . . . . . . .	Number	 00000020h   
+VK_SUBTRACT  . . . . . . . . . .	Number	 0000006Dh   
+VK_TAB . . . . . . . . . . . . .	Number	 00000009h   
+VK_UP  . . . . . . . . . . . . .	Number	 00000026h   
+WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
+WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
+WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+appleeaten . . . . . . . . . . .	Byte	 0000006D _DATA	
+apple  . . . . . . . . . . . . .	Byte	 000000AF _DATA	
+begin  . . . . . . . . . . . . .	L Near	 00000000 _TEXT	
+black  . . . . . . . . . . . . .	Number	 00000000h   
+blue . . . . . . . . . . . . . .	Number	 00000001h   
+bricks1  . . . . . . . . . . . .	Byte	 00000070 _DATA	
+bricks2  . . . . . . . . . . . .	Byte	 000000A4 _DATA	
+brown  . . . . . . . . . . . . .	Number	 00000006h   
+cyan . . . . . . . . . . . . . .	Number	 00000003h   
+direction  . . . . . . . . . . .	Byte	 0000006E _DATA	
+exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
+gray . . . . . . . . . . . . . .	Number	 00000008h   
+green  . . . . . . . . . . . . .	Number	 00000002h   
+head . . . . . . . . . . . . . .	Byte	 00000069 _DATA	
+lightBlue  . . . . . . . . . . .	Number	 00000009h   
+lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
+lightGray  . . . . . . . . . . .	Number	 00000007h   
+lightGreen . . . . . . . . . . .	Number	 0000000Ah   
+lightMagenta . . . . . . . . . .	Number	 0000000Dh   
+lightRed . . . . . . . . . . . .	Number	 0000000Ch   
+magenta  . . . . . . . . . . . .	Number	 00000005h   
+node . . . . . . . . . . . . . .	Byte	 0000006A _DATA	
+olddirection . . . . . . . . . .	Byte	 0000006F _DATA	
+red  . . . . . . . . . . . . . .	Number	 00000004h   
+score  . . . . . . . . . . . . .	DWord	 00000674 _DATA	
+speed  . . . . . . . . . . . . .	Word	 00000678 _DATA	
+white  . . . . . . . . . . . . .	Number	 0000000Fh   
+wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
+x_apple  . . . . . . . . . . . .	Byte	 0000006B _DATA	
+x_head . . . . . . . . . . . . .	Byte	 00000067 _DATA	
+x_tail . . . . . . . . . . . . .	Byte	 000000B0 _DATA	
+y_apple  . . . . . . . . . . . .	Byte	 0000006C _DATA	
+y_head . . . . . . . . . . . . .	Byte	 00000068 _DATA	
+y_tail . . . . . . . . . . . . .	Byte	 000000B1 _DATA	
+yellow . . . . . . . . . . . . .	Number	 0000000Eh   
+
+	   0 Warnings
+	   0 Errors
