@@ -21,8 +21,29 @@ Code Review for Final Project
 + Calls [`WaitMsg`](#waitmsg)
 + Clears the console
 
++ Args/Returns
+    + No stack args, only global vars
+    + Returns pseudo-random number in EAX
+    + Registers Changed: ECX, EDX, EFL
+
 ### fillboard
++ Writes a zero into each board "space" in memory
+
++ Args/Returns
+    + Takes 1 4-byte stack arg (Pointer to board spaces in memory)
+    + No "return value"
+    + Changes memory allocated for board spaces to 0
+    + Registers changed: ESI, ECX, EAX, EFL
+
 ### display
++ Clears the console
++ Prints a "radar" label
++ Prints column numbers
++ 
+
++ Args/Returns
+    + Takes 2 4-byte stack args (Pointer to player board, pointer to computer board)
+    + 
 ### plc3ship
 ### plc2ship
 ### plc1ship
