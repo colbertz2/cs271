@@ -36,10 +36,23 @@ Code Review for Final Project
     + Registers changed: ESI, ECX, EAX, EFL
 
 ### display
++ ESI --> Player Board
++ EDI --> Computer Board
 + Clears the console
 + Prints a "radar" label
 + Prints column numbers
-+ 
++ Initializes a global variable (`strnum`) and gp registers
++ Prints first row number and a space before entering loop
++ `forloop2`:
+    + Print `[` character to start space
+    + EAX = value at EDI
+    + if EAX == 0, print space
+    + elseif EAX == 4, print `O` for miss
+    + elseif EAX == 5, print `X` for hit
+    + Print `]` followed by space to close board space
+    + Advance EDI to the next array element (+4 bytes)
+    + Increment EBX (EBX is tracking spaces per row)
+    + if EBX < 5, 
 
 + Args/Returns
     + Takes 2 4-byte stack args (Pointer to player board, pointer to computer board)
@@ -66,6 +79,7 @@ Code Review for Final Project
 
 ### Are there any procedures or instructions that you did not learn in the class? Can you figure out what they do?
 #### WaitMsg
+Same as the Windows `pause` command. Prints "Press any key to continue..." and waits for user input.
 
 ### Are there any graphics? How do the programmers implement graphics?
 ### Do the programmers include enough documentation?
